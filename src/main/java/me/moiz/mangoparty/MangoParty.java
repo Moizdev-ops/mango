@@ -3,9 +3,10 @@ package me.moiz.mangoparty;
 import me.moiz.mangoparty.commands.*;
 import me.moiz.mangoparty.config.ConfigManager;
 import me.moiz.mangoparty.gui.GuiManager;
+import me.moiz.mangoparty.gui.ArenaEditorGui;
+import me.moiz.mangoparty.gui.KitEditorGui;
 import me.moiz.mangoparty.listeners.*;
 import me.moiz.mangoparty.managers.*;
-import me.moiz.mangoparty.utils.HexUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -21,6 +22,8 @@ public final class MangoParty extends JavaPlugin {
     private ConfigManager configManager;
     private PartyDuelManager partyDuelManager;
     private QueueManager queueManager;
+    private ArenaEditorGui arenaEditorGui;
+    private KitEditorGui kitEditorGui;
     
     // Listeners
     private PlayerConnectionListener playerConnectionListener;
@@ -39,7 +42,7 @@ public final class MangoParty extends JavaPlugin {
         
         // Initialize managers
         configManager = new ConfigManager(this);
-        partyManager = new PartyManager(this);
+        partyManager = new PartyManager();
         arenaManager = new ArenaManager(this);
         kitManager = new KitManager(this);
         matchManager = new MatchManager(this);
@@ -47,6 +50,8 @@ public final class MangoParty extends JavaPlugin {
         guiManager = new GuiManager(this);
         partyDuelManager = new PartyDuelManager(this);
         queueManager = new QueueManager(this);
+        arenaEditorGui = new ArenaEditorGui(this);
+        kitEditorGui = new KitEditorGui(this);
         
         // Initialize listeners
         playerConnectionListener = new PlayerConnectionListener(this);
@@ -99,7 +104,7 @@ public final class MangoParty extends JavaPlugin {
         
         // Spectate commands
         getCommand("spectate").setExecutor(new SpectateCommand(this));
-        getCommand("spectate").setTabCompleter(new SpectateTabCompleter());
+        getCommand("spectate").setTabCompleter(new SpectateTabCompleter(this));
         
         // Admin commands
         getCommand("mango").setExecutor(new MangoCommand(this));
@@ -144,6 +149,10 @@ public final class MangoParty extends JavaPlugin {
         spawnLocation = location;
     }
     
+    public void setSpawnLocation(Location location) {
+        saveSpawnLocation(location);
+    }
+    
     // Getters
     public PartyManager getPartyManager() { return partyManager; }
     public ArenaManager getArenaManager() { return arenaManager; }
@@ -154,6 +163,8 @@ public final class MangoParty extends JavaPlugin {
     public ConfigManager getConfigManager() { return configManager; }
     public PartyDuelManager getPartyDuelManager() { return partyDuelManager; }
     public QueueManager getQueueManager() { return queueManager; }
+    public ArenaEditorGui getArenaEditorGui() { return arenaEditorGui; }
+    public KitEditorGui getKitEditorGui() { return kitEditorGui; }
     public SpectatorListener getSpectatorListener() { return spectatorListener; }
     public Location getSpawnLocation() { return spawnLocation; }
 }

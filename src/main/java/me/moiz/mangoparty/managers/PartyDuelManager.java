@@ -70,7 +70,7 @@ public class PartyDuelManager {
         
         // Send to challenged party
         for (Player member : challengedParty.getOnlineMembers()) {
-            member.sendMessage(message);
+            member.spigot().sendMessage(message);
             member.spigot().sendMessage(acceptButton, new TextComponent(" "), declineButton);
         }
         

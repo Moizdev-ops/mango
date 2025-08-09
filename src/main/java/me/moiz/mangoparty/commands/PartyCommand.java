@@ -79,10 +79,18 @@ public class PartyCommand implements CommandExecutor {
                 handleChallengeCommand(player, args[1]);
                 break;
             case "acceptduel":
-                handleAcceptDuelCommand(player);
+                if (args.length < 2) {
+                    player.sendMessage("§cUsage: /party acceptduel <challenger>");
+                    return true;
+                }
+                handleAcceptDuelCommand(player, args[1]);
                 break;
             case "declineduel":
-                handleDeclineDuelCommand(player);
+                if (args.length < 2) {
+                    player.sendMessage("§cUsage: /party declineduel <challenger>");
+                    return true;
+                }
+                handleDeclineDuelCommand(player, args[1]);
                 break;
             default:
                 sendHelpMessage(player);
@@ -103,8 +111,8 @@ public class PartyCommand implements CommandExecutor {
         player.sendMessage("§e/party match §7- Start a match (leader only)");
         player.sendMessage("§e/party fight §7- Start a match (leader only)");
         player.sendMessage("§e/party challenge <leader> §7- Challenge another party");
-        player.sendMessage("§e/party acceptduel §7- Accept a party duel");
-        player.sendMessage("§e/party declineduel §7- Decline a party duel");
+        player.sendMessage("§e/party acceptduel <challenger> §7- Accept a party duel");
+        player.sendMessage("§e/party declineduel <challenger> §7- Decline a party duel");
         player.sendMessage("§e/party info §7- View party information");
     }
     
@@ -321,17 +329,11 @@ public class PartyCommand implements CommandExecutor {
         plugin.getGuiManager().openPartyVsPartyKitGui(player, target);
     }
 
-    private void handleAcceptDuelCommand(Player player) {
-        boolean success = plugin.getPartyDuelManager().acceptDuel(player);
-        if (!success) {
-            player.sendMessage("§cFailed to accept duel!");
-        }
+    private void handleAcceptDuelCommand(Player player, String challengerName) {
+        plugin.getPartyDuelManager().acceptDuel(player, challengerName);
     }
 
-    private void handleDeclineDuelCommand(Player player) {
-        boolean success = plugin.getPartyDuelManager().declineDuel(player);
-        if (!success) {
-            player.sendMessage("§cFailed to decline duel!");
-        }
+    private void handleDeclineDuelCommand(Player player, String challengerName) {
+        plugin.getPartyDuelManager().declineDuel(player, challengerName);
     }
 }

@@ -24,6 +24,8 @@ public class Match {
     private Map<UUID, Integer> playerTeams;
     private Set<UUID> eliminatedPlayers;
     private Set<UUID> spectators;
+    private Map<UUID, Integer> kills;
+    private Map<UUID, Integer> deaths;
     private long startTime;
     
     public Match(String id, Party party, Arena arena, Kit kit, String matchType) {
@@ -36,6 +38,8 @@ public class Match {
         this.playerTeams = new HashMap<>();
         this.eliminatedPlayers = new HashSet<>();
         this.spectators = new HashSet<>();
+        this.kills = new HashMap<>();
+        this.deaths = new HashMap<>();
         this.startTime = System.currentTimeMillis();
     }
     
@@ -63,10 +67,20 @@ public class Match {
     
     public void eliminatePlayer(UUID playerId) {
         eliminatedPlayers.add(playerId);
+        spectators.add(playerId);
+        deaths.put(playerId, deaths.getOrDefault(playerId, 0) + 1);
+    }
+    
+    public void addKill(UUID playerId) {
+        kills.put(playerId, kills.getOrDefault(playerId, 0) + 1);
     }
     
     public boolean isPlayerEliminated(UUID playerId) {
         return eliminatedPlayers.contains(playerId);
+    }
+    
+    public boolean isPlayerAlive(UUID playerId) {
+        return !isPlayerEliminated(playerId);
     }
     
     public void addSpectator(UUID playerId) {
@@ -135,6 +149,26 @@ public class Match {
         return alive;
     }
     
+    public int getAlivePlayersCount() {
+        return getAlivePlayers().size();
+    }
+    
+    public int getSpectatorsCount() {
+        return spectators.size();
+    }
+    
+    public int getPlayerKills(UUID playerId) {
+        return kills.getOrDefault(playerId, 0);
+    }
+    
+    public int getPlayerDeaths(UUID playerId) {
+        return deaths.getOrDefault(playerId, 0);
+    }
+    
+    public long getMatchDuration() {
+        return System.currentTimeMillis() - startTime;
+    }
+    
     public List<Player> getAllPlayers() {
         List<Player> allPlayers = new ArrayList<>();
         
@@ -191,6 +225,16 @@ public class Match {
         int count = 0;
         for (Map.Entry<UUID, Integer> entry : playerTeams.entrySet()) {
             if (entry.getValue() == team && !isPlayerEliminated(entry.getKey())) {
+                count++;
+            }
+        }
+        return count;
+    }
+    
+    public int getTeamTotalCount(int team) {
+        int count = 0;
+        for (Integer playerTeam : playerTeams.values()) {
+            if (playerTeam == team) {
                 count++;
             }
         }
