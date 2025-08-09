@@ -71,3 +71,23 @@ buttons:
       - "§7TNT has normal fuse time"
       - "§7Click to enable"
     customModelData: 0
+
+  edit_icon:
+    slot: 16
+    material: "ITEM_FRAME"
+    name: "§6Edit Kit Icon"
+    lore:
+      - "§7Hold an item in your main hand"
+      - "§7and click to set it as the kit icon"
+      - "§7This icon will appear in all GUIs"
+    customModelData: 0
+
+  add_to_gui:
+    slot: 22
+    material: "CHEST"
+    name: "§eAdd to GUI"
+    lore:
+      - "§7Click to add this kit to"
+      - "§7match type GUIs"
+      - "§7(Split, FFA, Queues)"
+    customModelData: 0

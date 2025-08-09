@@ -17,6 +17,7 @@ import org.bukkit.inventory.meta.ItemMeta;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
@@ -119,8 +120,16 @@ public class KitEditorGui implements Listener {
         if (buttons != null) {
             for (String buttonKey : buttons.getKeys(false)) {
                 ConfigurationSection buttonConfig = buttons.getConfigurationSection(buttonKey);
-                ItemStack item = createRuleButton(buttonConfig, buttonKey, kit.getRules());
-                gui.setItem(buttonConfig.getInt("slot"), item);
+                if (buttonKey.equals("edit_icon")) {
+                    ItemStack item = createIconEditButton(buttonConfig, kit);
+                    gui.setItem(buttonConfig.getInt("slot"), item);
+                } else if (buttonKey.equals("add_to_gui")) {
+                    ItemStack item = createAddToGuiButton(buttonConfig, kit);
+                    gui.setItem(buttonConfig.getInt("slot"), item);
+                } else {
+                    ItemStack item = createRuleButton(buttonConfig, buttonKey, kit.getRules());
+                    gui.setItem(buttonConfig.getInt("slot"), item);
+                }
             }
         }
         
@@ -140,6 +149,43 @@ public class KitEditorGui implements Listener {
         
         meta.setDisplayName(config.getString(nameKey));
         meta.setLore(config.getStringList(loreKey));
+        
+        int customModelData = config.getInt("customModelData");
+        if (customModelData > 0) {
+            meta.setCustomModelData(customModelData);
+        }
+        
+        item.setItemMeta(meta);
+        return item;
+    }
+
+    private ItemStack createIconEditButton(ConfigurationSection config, Kit kit) {
+        Material material = Material.valueOf(config.getString("material"));
+        ItemStack item = new ItemStack(material);
+        ItemMeta meta = item.getItemMeta();
+        
+        meta.setDisplayName(config.getString("name"));
+        
+        List<String> lore = new ArrayList<>(config.getStringList("lore"));
+        lore.add("§7Current icon: §f" + (kit.getIcon() != null ? kit.getIcon().getType().toString() : "None"));
+        meta.setLore(lore);
+        
+        int customModelData = config.getInt("customModelData");
+        if (customModelData > 0) {
+            meta.setCustomModelData(customModelData);
+        }
+        
+        item.setItemMeta(meta);
+        return item;
+    }
+
+    private ItemStack createAddToGuiButton(ConfigurationSection config, Kit kit) {
+        Material material = Material.valueOf(config.getString("material"));
+        ItemStack item = new ItemStack(material);
+        ItemMeta meta = item.getItemMeta();
+        
+        meta.setDisplayName(config.getString("name"));
+        meta.setLore(config.getStringList("lore"));
         
         int customModelData = config.getInt("customModelData");
         if (customModelData > 0) {
@@ -186,6 +232,52 @@ public class KitEditorGui implements Listener {
                 break;
         }
     }
+
+    private void openAddToGuiMenu(Player player, Kit kit) {
+        Inventory gui = Bukkit.createInventory(null, 27, "§6Add " + kit.getName() + " to GUI");
+        
+        // Split GUI option
+        ItemStack splitItem = new ItemStack(Material.IRON_SWORD);
+        ItemMeta splitMeta = splitItem.getItemMeta();
+        splitMeta.setDisplayName("§aAdd to Split GUI");
+        splitMeta.setLore(Arrays.asList("§7Add this kit to party split matches"));
+        splitItem.setItemMeta(splitMeta);
+        gui.setItem(10, splitItem);
+        
+        // FFA GUI option
+        ItemStack ffaItem = new ItemStack(Material.DIAMOND_SWORD);
+        ItemMeta ffaMeta = ffaItem.getItemMeta();
+        ffaMeta.setDisplayName("§cAdd to FFA GUI");
+        ffaMeta.setLore(Arrays.asList("§7Add this kit to party FFA matches"));
+        ffaItem.setItemMeta(ffaMeta);
+        gui.setItem(12, ffaItem);
+        
+        // 1v1 Queue option
+        ItemStack queue1v1Item = new ItemStack(Material.GOLDEN_SWORD);
+        ItemMeta queue1v1Meta = queue1v1Item.getItemMeta();
+        queue1v1Meta.setDisplayName("§6Add to 1v1 Queue");
+        queue1v1Meta.setLore(Arrays.asList("§7Add this kit to 1v1 ranked queue"));
+        queue1v1Item.setItemMeta(queue1v1Meta);
+        gui.setItem(14, queue1v1Item);
+        
+        // 2v2 Queue option
+        ItemStack queue2v2Item = new ItemStack(Material.GOLDEN_AXE);
+        ItemMeta queue2v2Meta = queue2v2Item.getItemMeta();
+        queue2v2Meta.setDisplayName("§6Add to 2v2 Queue");
+        queue2v2Meta.setLore(Arrays.asList("§7Add this kit to 2v2 ranked queue"));
+        queue2v2Item.setItemMeta(queue2v2Meta);
+        gui.setItem(16, queue2v2Item);
+        
+        // 3v3 Queue option
+        ItemStack queue3v3Item = new ItemStack(Material.NETHERITE_SWORD);
+        ItemMeta queue3v3Meta = queue3v3Item.getItemMeta();
+        queue3v3Meta.setDisplayName("§6Add to 3v3 Queue");
+        queue3v3Meta.setLore(Arrays.asList("§7Add this kit to 3v3 ranked queue"));
+        queue3v3Item.setItemMeta(queue3v3Meta);
+        gui.setItem(18, queue3v3Item);
+        
+        player.openInventory(gui);
+    }
     
     @EventHandler
     public void onInventoryClick(InventoryClickEvent event) {
@@ -215,6 +307,28 @@ public class KitEditorGui implements Listener {
             
             String ruleKey = identifyRuleButton(event.getSlot());
             if (ruleKey != null) {
+                if (ruleKey.equals("edit_icon")) {
+                    // Set kit icon to player's main hand item
+                    ItemStack heldItem = player.getInventory().getItemInMainHand();
+                    if (heldItem != null && heldItem.getType() != Material.AIR) {
+                        ItemStack iconItem = heldItem.clone();
+                        iconItem.setAmount(1);
+                        kit.setIcon(iconItem);
+                        plugin.getKitManager().saveKit(kit);
+                        
+                        // Refresh the GUI
+                        openKitEditorGui(player, kitName);
+                        
+                        player.sendMessage("§aKit icon updated to " + iconItem.getType().toString() + " for kit: " + kitName);
+                    } else {
+                        player.sendMessage("§cHold an item in your main hand to set it as the kit icon!");
+                    }
+                    return;
+                }
+                if (ruleKey.equals("add_to_gui")) {
+                    openAddToGuiMenu(player, kit);
+                    return;
+                }
                 toggleRule(ruleKey, kit.getRules());
                 plugin.getKitManager().saveKit(kit);
                 
@@ -222,6 +336,46 @@ public class KitEditorGui implements Listener {
                 openKitEditorGui(player, kitName);
                 
                 player.sendMessage("§aToggled " + ruleKey.replace("_", " ") + " for kit: " + kitName);
+            }
+        } else if (title.startsWith("§6Add ") && title.endsWith(" to GUI")) {
+            event.setCancelled(true);
+            
+            String kitName = title.replace("§6Add ", "").replace(" to GUI", "");
+            Kit kit = plugin.getKitManager().getKit(kitName);
+            if (kit == null) return;
+            
+            ItemStack clicked = event.getCurrentItem();
+            if (clicked == null || clicked.getType() == Material.AIR) return;
+            
+            String guiType = "";
+            if (clicked.getType() == Material.IRON_SWORD) {
+                guiType = "split";
+            } else if (clicked.getType() == Material.DIAMOND_SWORD) {
+                guiType = "ffa";
+            } else if (clicked.getType() == Material.GOLDEN_SWORD) {
+                guiType = "1v1";
+            } else if (clicked.getType() == Material.GOLDEN_AXE) {
+                guiType = "2v2";
+            } else if (clicked.getType() == Material.NETHERITE_SWORD) {
+                guiType = "3v3";
+            }
+            
+            if (!guiType.isEmpty()) {
+                boolean success;
+                if (guiType.equals("split") || guiType.equals("ffa")) {
+                    success = plugin.getConfigManager().addKitToGuiConfig(kit, guiType, null);
+                } else {
+                    success = plugin.getConfigManager().addKitToQueueGuiConfig(kit, guiType, null);
+                }
+                
+                if (success) {
+                    player.sendMessage("§aKit '" + kitName + "' added to " + guiType.toUpperCase() + " GUI!");
+                    plugin.getGuiManager().reloadGuiConfigs();
+                } else {
+                    player.sendMessage("§cFailed to add kit to " + guiType.toUpperCase() + " GUI. It might already be there.");
+                }
+                
+                player.closeInventory();
             }
         }
     }

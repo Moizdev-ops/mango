@@ -31,7 +31,7 @@ public class PartyTabCompleter implements TabCompleter {
         
         if (args.length == 1) {
             // First argument: party commands
-            List<String> commands = Arrays.asList("create", "invite", "join", "transfer", "leave", "disband", "match", "info", "challenge", "acceptchallenge", "declinechallenge");
+            List<String> commands = Arrays.asList("create", "invite", "join", "transfer", "leave", "disband", "match", "fight", "info", "challenge");
             return commands.stream()
                     .filter(cmd -> cmd.toLowerCase().startsWith(args[0].toLowerCase()))
                     .collect(Collectors.toList());
@@ -67,13 +67,6 @@ public class PartyTabCompleter implements TabCompleter {
                             .filter(name -> name.toLowerCase().startsWith(args[1].toLowerCase()))
                             .collect(Collectors.toList());
                 }
-            } else if (args[0].equalsIgnoreCase("acceptchallenge") || args[0].equalsIgnoreCase("declinechallenge")) {
-                // Suggest online players who might have sent challenges
-                return Bukkit.getOnlinePlayers().stream()
-                        .filter(p -> !p.equals(player))
-                        .map(Player::getName)
-                        .filter(name -> name.toLowerCase().startsWith(args[1].toLowerCase()))
-                        .collect(Collectors.toList());
             }
         }
         
