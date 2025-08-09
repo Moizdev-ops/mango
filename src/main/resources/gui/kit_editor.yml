@@ -79,15 +79,29 @@ buttons:
     lore:
       - "§7Hold an item in your main hand"
       - "§7and click to set it as the kit icon"
-      - "§7This icon will appear in all GUIs"
+      - "§7This icon will appear in ALL GUIs"
+      - "§7universally across the plugin"
     customModelData: 0
 
   add_to_gui:
-    slot: 22
+    slot: 21
     material: "CHEST"
-    name: "§eAdd to GUI"
+    name: "§eManage GUI Placement"
     lore:
-      - "§7Click to add this kit to"
-      - "§7match type GUIs"
-      - "§7(Split, FFA, Queues)"
+      - "§a§lLeft Click: §7Add kit to GUIs"
+      - "§c§lRight Click: §7Remove kit from GUIs"
+      - "§7Manage kit placement in:"
+      - "§7• Split, FFA, Queue GUIs"
+    customModelData: 0
+
+  edit_slots:
+    slot: 23
+    material: "COMPASS"
+    name: "§bEdit GUI Slots"
+    lore:
+      - "§7Click to edit slot positions"
+      - "§7for this kit in different GUIs"
+      - "§7• Change Split GUI slot"
+      - "§7• Change FFA GUI slot"
+      - "§7• Change Queue GUI slots"
     customModelData: 0

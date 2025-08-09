@@ -300,4 +300,182 @@ public class ConfigManager {
             return false;
         }
     }
+
+    public boolean removeKitFromGuiConfig(Kit kit, String matchType) {
+        File guiDir = new File(plugin.getDataFolder(), "gui");
+        File guiFile;
+        YamlConfiguration guiConfig;
+
+        if (matchType.equalsIgnoreCase("split")) {
+            guiFile = new File(guiDir, "split.yml");
+        } else if (matchType.equalsIgnoreCase("ffa")) {
+            guiFile = new File(guiDir, "ffa.yml");
+        } else {
+            return false; // Invalid match type
+        }
+
+        if (!guiFile.exists()) {
+            plugin.getLogger().warning("GUI config file not found: " + guiFile.getName());
+            return false;
+        }
+
+        guiConfig = YamlConfiguration.loadConfiguration(guiFile);
+
+        // Find and remove the kit
+        ConfigurationSection kitsSection = guiConfig.getConfigurationSection("kits");
+        if (kitsSection != null) {
+            for (String key : kitsSection.getKeys(false)) {
+                if (kitsSection.getString(key + ".kit", "").equalsIgnoreCase(kit.getName())) {
+                    kitsSection.set(key, null);
+                    
+                    try {
+                        guiConfig.save(guiFile);
+                        return true;
+                    } catch (IOException e) {
+                        plugin.getLogger().severe("Failed to save " + guiFile.getName() + ": " + e.getMessage());
+                        return false;
+                    }
+                }
+            }
+        }
+        
+        return false; // Kit not found
+    }
+
+    public boolean removeKitFromQueueGuiConfig(Kit kit, String mode) {
+        File guiDir = new File(plugin.getDataFolder(), "gui");
+        File guiFile = new File(guiDir, mode + "kits.yml");
+        YamlConfiguration guiConfig;
+
+        if (!guiFile.exists()) {
+            plugin.getLogger().warning("Queue GUI config file not found: " + guiFile.getName());
+            return false;
+        }
+
+        guiConfig = YamlConfiguration.loadConfiguration(guiFile);
+
+        // Remove the kit
+        ConfigurationSection kitsSection = guiConfig.getConfigurationSection("kits");
+        if (kitsSection != null && kitsSection.contains(kit.getName())) {
+            kitsSection.set(kit.getName(), null);
+            
+            try {
+                guiConfig.save(guiFile);
+                return true;
+            } catch (IOException e) {
+                plugin.getLogger().severe("Failed to save " + guiFile.getName() + ": " + e.getMessage());
+                return false;
+            }
+        }
+        
+        return false; // Kit not found
+    }
+
+    public void updateKitIconInAllGuis(Kit kit) {
+        if (kit.getIcon() == null) return;
+        
+        String materialName = kit.getIcon().getType().toString();
+        Integer customModelData = null;
+        if (kit.getIcon().hasItemMeta() && kit.getIcon().getItemMeta().hasCustomModelData()) {
+            customModelData = kit.getIcon().getItemMeta().getCustomModelData();
+        }
+        
+        // Update split and ffa GUIs
+        updateKitIconInGuiConfig(kit, "split", materialName, customModelData);
+        updateKitIconInGuiConfig(kit, "ffa", materialName, customModelData);
+        
+        // Update queue GUIs
+        updateKitIconInQueueGuiConfig(kit, "1v1", materialName, customModelData);
+        updateKitIconInQueueGuiConfig(kit, "2v2", materialName, customModelData);
+        updateKitIconInQueueGuiConfig(kit, "3v3", materialName, customModelData);
+    }
+
+    private void updateKitIconInGuiConfig(Kit kit, String matchType, String materialName, Integer customModelData) {
+        File guiDir = new File(plugin.getDataFolder(), "gui");
+        File guiFile = new File(guiDir, matchType + ".yml");
+        
+        if (!guiFile.exists()) return;
+        
+        YamlConfiguration guiConfig = YamlConfiguration.loadConfiguration(guiFile);
+        ConfigurationSection kitsSection = guiConfig.getConfigurationSection("kits");
+        
+        if (kitsSection != null) {
+            for (String key : kitsSection.getKeys(false)) {
+                if (kitsSection.getString(key + ".kit", "").equalsIgnoreCase(kit.getName())) {
+                    // Update material (icon is handled by kit.getIcon() in GUI creation)
+                    if (customModelData != null) {
+                        kitsSection.set(key + ".customModelData", customModelData);
+                    }
+                    
+                    try {
+                        guiConfig.save(guiFile);
+                        plugin.getLogger().info("Updated kit icon in " + matchType + " GUI for kit: " + kit.getName());
+                    } catch (IOException e) {
+                        plugin.getLogger().severe("Failed to update icon in " + guiFile.getName() + ": " + e.getMessage());
+                    }
+                    break;
+                }
+            }
+        }
+    }
+
+    private void updateKitIconInQueueGuiConfig(Kit kit, String mode, String materialName, Integer customModelData) {
+        File guiDir = new File(plugin.getDataFolder(), "gui");
+        File guiFile = new File(guiDir, mode + "kits.yml");
+        
+        if (!guiFile.exists()) return;
+        
+        YamlConfiguration guiConfig = YamlConfiguration.loadConfiguration(guiFile);
+        ConfigurationSection kitsSection = guiConfig.getConfigurationSection("kits");
+        
+        if (kitsSection != null && kitsSection.contains(kit.getName())) {
+            kitsSection.set(kit.getName() + ".material", materialName);
+            if (customModelData != null) {
+                kitsSection.set(kit.getName() + ".customModelData", customModelData);
+            }
+            
+            try {
+                guiConfig.save(guiFile);
+                plugin.getLogger().info("Updated kit icon in " + mode + " queue GUI for kit: " + kit.getName());
+            } catch (IOException e) {
+                plugin.getLogger().severe("Failed to update icon in " + guiFile.getName() + ": " + e.getMessage());
+            }
+        }
+    }
+
+    public String getKitSlotInGui(Kit kit, String matchType) {
+        File guiDir = new File(plugin.getDataFolder(), "gui");
+        File guiFile = new File(guiDir, matchType + ".yml");
+        
+        if (!guiFile.exists()) return "Not in GUI";
+        
+        YamlConfiguration guiConfig = YamlConfiguration.loadConfiguration(guiFile);
+        ConfigurationSection kitsSection = guiConfig.getConfigurationSection("kits");
+        
+        if (kitsSection != null) {
+            for (String key : kitsSection.getKeys(false)) {
+                if (kitsSection.getString(key + ".kit", "").equalsIgnoreCase(kit.getName())) {
+                    return String.valueOf(kitsSection.getInt(key + ".slot"));
+                }
+            }
+        }
+        
+        return "Not in GUI";
+    }
+
+    public String getKitSlotInQueueGui(Kit kit, String mode) {
+        File guiDir = new File(plugin.getDataFolder(), "gui");
+        File guiFile = new File(guiDir, mode + "kits.yml");
+        
+        if (!guiFile.exists()) return "Not in GUI";
+        
+        YamlConfiguration guiConfig = YamlConfiguration.loadConfiguration(guiFile);
+        ConfigurationSection kitsSection = guiConfig.getConfigurationSection("kits");
+        
+        if (kitsSection != null && kitsSection.contains(kit.getName())) {
+            return String.valueOf(kitsSection.getInt(kit.getName() + ".slot"));
+        }
+        
+        return "Not in GUI";
+    }
 }
