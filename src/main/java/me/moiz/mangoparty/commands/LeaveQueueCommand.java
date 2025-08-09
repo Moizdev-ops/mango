@@ -16,7 +16,7 @@ public class LeaveQueueCommand implements CommandExecutor {
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         if (!(sender instanceof Player)) {
-            sender.sendMessage("§cThis command can only be used by players!");
+            sender.sendMessage("§cOnly players can use this command!");
             return true;
         }
         

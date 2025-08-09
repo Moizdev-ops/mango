@@ -1,39 +1,31 @@
 package me.moiz.mangoparty.models;
 
 import org.bukkit.entity.Player;
-
-import java.util.UUID;
+import org.bukkit.scheduler.BukkitTask;
 
 public class PartyDuel {
-    private UUID challengerLeader;
-    private UUID challengedLeader;
+    private Player challenger;
+    private Player challenged;
     private String kitName;
-    private long expirationTime;
+    private long challengeTime;
+    private BukkitTask expirationTask;
     
-    public PartyDuel(UUID challengerLeader, UUID challengedLeader, String kitName) {
-        this.challengerLeader = challengerLeader;
-        this.challengedLeader = challengedLeader;
+    public PartyDuel(Player challenger, Player challenged, String kitName) {
+        this.challenger = challenger;
+        this.challenged = challenged;
         this.kitName = kitName;
-        this.expirationTime = System.currentTimeMillis() + (60 * 1000); // 60 seconds
-    }
-    
-    public UUID getChallengerLeader() {
-        return challengerLeader;
-    }
-    
-    public UUID getChallengedLeader() {
-        return challengedLeader;
-    }
-    
-    public String getKitName() {
-        return kitName;
+        this.challengeTime = System.currentTimeMillis();
     }
     
     public boolean isExpired() {
-        return System.currentTimeMillis() > expirationTime;
+        return System.currentTimeMillis() - challengeTime > 60000; // 60 seconds
     }
     
-    public long getTimeLeft() {
-        return Math.max(0, expirationTime - System.currentTimeMillis());
-    }
+    // Getters and setters
+    public Player getChallenger() { return challenger; }
+    public Player getChallenged() { return challenged; }
+    public String getKitName() { return kitName; }
+    public long getChallengeTime() { return challengeTime; }
+    public BukkitTask getExpirationTask() { return expirationTask; }
+    public void setExpirationTask(BukkitTask task) { this.expirationTask = task; }
 }

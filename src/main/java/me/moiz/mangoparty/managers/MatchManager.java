@@ -371,10 +371,6 @@ public class MatchManager {
     public boolean isInMatch(Player player) {
         return playerMatches.containsKey(player.getUniqueId());
     }
-
-    public Map<UUID, Integer> getPlayerTeams() {
-        return playerTeams;
-    }
     
     public void cleanup() {
         // Cancel all countdown tasks

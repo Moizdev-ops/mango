@@ -2,12 +2,11 @@ title: "§63V3 Kit Selection"
 size: 27
 
 kits:
-  # Kits will be added here via /mango addkitgui <kit> 3v3 [slot]
-  # Example:
-  # mage:
+  # Example configuration - populate with actual kits using /mango addkitgui
+  # axe:
   #   slot: 13
-  #   material: BLAZE_ROD
-  #   name: "&9Mage Kit"
+  #   material: IRON_AXE
+  #   name: "&cAxe Kit"
   #   lore:
   #     - "&7Click to queue with this kit."
   #     - "&eQueued: {queued}"

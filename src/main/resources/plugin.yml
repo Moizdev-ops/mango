@@ -1,47 +1,57 @@
 name: MangoParty
-version: 1.0.0
+version: '${project.version}'
 main: me.moiz.mangoparty.MangoParty
-api-version: 1.21
-author: Moiz
-description: A comprehensive party system with arena management and kit system
-website: https://github.com/moiz/mangoparty
-
-depend: [WorldEdit, FastAsyncWorldEdit]
+api-version: '1.21'
+authors: [ Moiz ]
+description: Advanced party system for Minecraft with duels and matches
+website: https://github.com/Moizdev-ops
 
 commands:
   party:
     description: Party management commands
-    usage: /party <create|invite|join|transfer|leave|disband|match|challenge|acceptduel|declineduel|info>
-    aliases: [p, par, part]
-  mango:
-    description: MangoParty admin commands
-    usage: /mango <arena|create> [args...]
-    permission: mangoparty.admin
+    usage: /party <create|invite|accept|decline|kick|leave|list|disband|match|challenge|accept|decline>
+    aliases: [p]
+  
   spectate:
-    description: Spectate other players during matches
+    description: Spectate a match
     usage: /spectate <player>
     aliases: [spec]
+  
+  mango:
+    description: MangoParty admin commands
+    usage: /mango <reload|setspawn|create|delete|list|addkitgui|removekitgui>
+    permission: mangoparty.admin
+  
   1v1queue:
-    description: Join 1v1 queue with kit selection
+    description: Join 1v1 queue
     usage: /1v1queue
-    aliases: [1v1, queue1v1]
+    aliases: [1v1]
+  
   2v2queue:
-    description: Join 2v2 queue with kit selection
+    description: Join 2v2 queue
     usage: /2v2queue
-    aliases: [2v2, queue2v2]
+    aliases: [2v2]
+  
   3v3queue:
-    description: Join 3v3 queue with kit selection
+    description: Join 3v3 queue
     usage: /3v3queue
-    aliases: [3v3, queue3v3]
+    aliases: [3v3]
+  
   leavequeue:
     description: Leave current queue
     usage: /leavequeue
-    aliases: [lq, queueleave]
+    aliases: [lq]
 
 permissions:
   mangoparty.admin:
-    description: Access to admin commands
+    description: Access to all MangoParty admin commands
     default: op
-  mangoparty.use:
+  mangoparty.party:
     description: Access to party commands
+    default: true
+  mangoparty.spectate:
+    description: Access to spectate command
+    default: true
+  mangoparty.queue:
+    description: Access to queue commands
     default: true

@@ -1,231 +1,205 @@
 package me.moiz.mangoparty.managers;
 
 import me.moiz.mangoparty.MangoParty;
-import me.moiz.mangoparty.models.Arena;
-import me.moiz.mangoparty.models.Kit;
-import me.moiz.mangoparty.models.Match;
-import me.moiz.mangoparty.models.Party;
-import me.moiz.mangoparty.models.PartyDuel;
+import me.moiz.mangoparty.models.*;
 import net.md_5.bungee.api.chat.ClickEvent;
 import net.md_5.bungee.api.chat.ComponentBuilder;
 import net.md_5.bungee.api.chat.HoverEvent;
 import net.md_5.bungee.api.chat.TextComponent;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
+import org.bukkit.scheduler.BukkitRunnable;
 
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.Map;
 import java.util.UUID;
 
 public class PartyDuelManager {
     private MangoParty plugin;
-    private Map<UUID, PartyDuel> pendingDuels; // Challenged party leader -> duel
+    private Map<UUID, PartyDuel> pendingDuels; // Challenged player UUID -> Duel
     
     public PartyDuelManager(MangoParty plugin) {
         this.plugin = plugin;
         this.pendingDuels = new HashMap<>();
     }
     
-    public boolean challengeParty(Player challenger, Player challengedLeader, String kitName) {
+    public void challengeParty(Player challenger, Player challengedLeader, String kitName) {
         Party challengerParty = plugin.getPartyManager().getParty(challenger);
         Party challengedParty = plugin.getPartyManager().getParty(challengedLeader);
         
         if (challengerParty == null || !challengerParty.isLeader(challenger.getUniqueId())) {
             challenger.sendMessage("§cYou must be a party leader to challenge other parties!");
-            return false;
+            return;
         }
         
         if (challengedParty == null || !challengedParty.isLeader(challengedLeader.getUniqueId())) {
-            challenger.sendMessage("§cThat player is not a party leader!");
-            return false;
-        }
-        
-        if (challengerParty.equals(challengedParty)) {
-            challenger.sendMessage("§cYou cannot challenge your own party!");
-            return false;
+            challenger.sendMessage("§cTarget player is not a party leader!");
+            return;
         }
         
         if (challengerParty.isInMatch() || challengedParty.isInMatch()) {
             challenger.sendMessage("§cOne of the parties is already in a match!");
-            return false;
-        }
-        
-        Kit kit = plugin.getKitManager().getKit(kitName);
-        if (kit == null) {
-            challenger.sendMessage("§cKit not found!");
-            return false;
+            return;
         }
         
         // Check if there's already a pending duel
         if (pendingDuels.containsKey(challengedLeader.getUniqueId())) {
             challenger.sendMessage("§cThat party already has a pending duel request!");
-            return false;
+            return;
         }
         
         // Create duel request
-        PartyDuel duel = new PartyDuel(challenger.getUniqueId(), challengedLeader.getUniqueId(), kitName);
+        PartyDuel duel = new PartyDuel(challenger, challengedLeader, kitName);
         pendingDuels.put(challengedLeader.getUniqueId(), duel);
         
-        // Send challenge message to challenged party leader
-        TextComponent message = new TextComponent("§6" + challenger.getName() + "'s party §7has challenged your party to a duel with kit §e" + kit.getDisplayName() + "§7! ");
-        TextComponent acceptButton = new TextComponent("§a[ACCEPT]");
-        acceptButton.setClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/party acceptduel"));
-        acceptButton.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new ComponentBuilder("Click to accept the duel").create()));
-        
-        TextComponent declineButton = new TextComponent(" §c[DECLINE]");
-        declineButton.setClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/party declineduel"));
-        declineButton.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new ComponentBuilder("Click to decline the duel").create()));
-        
-        message.addExtra(acceptButton);
-        message.addExtra(declineButton);
-        challengedLeader.spigot().sendMessage(message);
-        
-        // Notify challenger
+        // Send messages
         challenger.sendMessage("§aDuel request sent to " + challengedLeader.getName() + "'s party!");
         
-        return true;
+        // Create clickable accept/decline buttons
+        TextComponent message = new TextComponent("§e" + challenger.getName() + "'s party has challenged you to a duel!");
+        
+        TextComponent acceptButton = new TextComponent("§a[ACCEPT]");
+        acceptButton.setClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/party accept " + challenger.getName()));
+        acceptButton.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, 
+            new ComponentBuilder("§aClick to accept the duel").create()));
+        
+        TextComponent declineButton = new TextComponent("§c[DECLINE]");
+        declineButton.setClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/party decline " + challenger.getName()));
+        declineButton.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, 
+            new ComponentBuilder("§cClick to decline the duel").create()));
+        
+        // Send to challenged party
+        for (Player member : challengedParty.getOnlineMembers()) {
+            member.sendMessage(message);
+            member.spigot().sendMessage(acceptButton, new TextComponent(" "), declineButton);
+        }
+        
+        // Set expiration timer
+        duel.setExpirationTask(new BukkitRunnable() {
+            @Override
+            public void run() {
+                if (pendingDuels.remove(challengedLeader.getUniqueId()) != null) {
+                    challenger.sendMessage("§cYour duel request to " + challengedLeader.getName() + "'s party has expired.");
+                    challengedLeader.sendMessage("§cThe duel request from " + challenger.getName() + "'s party has expired.");
+                }
+            }
+        }.runTaskLater(plugin, 1200L)); // 60 seconds
     }
     
-    public boolean acceptDuel(Player player) {
-        PartyDuel duel = pendingDuels.get(player.getUniqueId());
+    public void acceptDuel(Player accepter, String challengerName) {
+        PartyDuel duel = pendingDuels.get(accepter.getUniqueId());
         if (duel == null) {
-            player.sendMessage("§cYou don't have any pending duel requests!");
-            return false;
+            accepter.sendMessage("§cYou don't have any pending duel requests!");
+            return;
         }
         
-        if (duel.isExpired()) {
-            pendingDuels.remove(player.getUniqueId());
-            player.sendMessage("§cThe duel request has expired!");
-            return false;
-        }
-        
-        Player challenger = Bukkit.getPlayer(duel.getChallengerLeader());
-        if (challenger == null || !challenger.isOnline()) {
-            pendingDuels.remove(player.getUniqueId());
-            player.sendMessage("§cThe challenger is no longer online!");
-            return false;
+        Player challenger = duel.getChallenger();
+        if (challenger == null || !challenger.isOnline() || !challenger.getName().equalsIgnoreCase(challengerName)) {
+            accepter.sendMessage("§cDuel request not found or challenger is offline!");
+            pendingDuels.remove(accepter.getUniqueId());
+            return;
         }
         
         Party challengerParty = plugin.getPartyManager().getParty(challenger);
-        Party challengedParty = plugin.getPartyManager().getParty(player);
+        Party challengedParty = plugin.getPartyManager().getParty(accepter);
         
         if (challengerParty == null || challengedParty == null) {
-            pendingDuels.remove(player.getUniqueId());
-            player.sendMessage("§cOne of the parties no longer exists!");
-            return false;
+            accepter.sendMessage("§cOne of the parties no longer exists!");
+            pendingDuels.remove(accepter.getUniqueId());
+            return;
         }
         
         if (challengerParty.isInMatch() || challengedParty.isInMatch()) {
-            pendingDuels.remove(player.getUniqueId());
-            player.sendMessage("§cOne of the parties is already in a match!");
-            return false;
+            accepter.sendMessage("§cOne of the parties is already in a match!");
+            pendingDuels.remove(accepter.getUniqueId());
+            return;
         }
         
-        // Get kit and arena
-        Kit kit = plugin.getKitManager().getKit(duel.getKitName());
+        // Get arena and kit
         Arena arena = plugin.getArenaManager().getAvailableArena();
-        
-        if (kit == null) {
-            pendingDuels.remove(player.getUniqueId());
-            player.sendMessage("§cThe selected kit is no longer available!");
-            return false;
-        }
-        
         if (arena == null) {
-            pendingDuels.remove(player.getUniqueId());
-            player.sendMessage("§cNo available arenas for the duel!");
-            return false;
+            accepter.sendMessage("§cNo available arenas for the duel!");
+            challenger.sendMessage("§cNo available arenas for the duel!");
+            pendingDuels.remove(accepter.getUniqueId());
+            return;
         }
         
-        // Start party vs party match
-        startPartyVsPartyMatch(challengerParty, challengedParty, arena, kit);
-        
-        // Remove duel request
-        pendingDuels.remove(player.getUniqueId());
-        
-        return true;
-    }
-    
-    public boolean declineDuel(Player player) {
-        PartyDuel duel = pendingDuels.remove(player.getUniqueId());
-        if (duel == null) {
-            player.sendMessage("§cYou don't have any pending duel requests!");
-            return false;
+        Kit kit = plugin.getKitManager().getKit(duel.getKitName());
+        if (kit == null) {
+            accepter.sendMessage("§cKit not found!");
+            challenger.sendMessage("§cKit not found!");
+            pendingDuels.remove(accepter.getUniqueId());
+            return;
         }
         
-        Player challenger = Bukkit.getPlayer(duel.getChallengerLeader());
-        if (challenger != null && challenger.isOnline()) {
-            challenger.sendMessage("§c" + player.getName() + "'s party declined your duel request.");
-        }
-        
-        player.sendMessage("§cDuel request declined.");
-        return true;
-    }
-    
-    private void startPartyVsPartyMatch(Party party1, Party party2, Arena arena, Kit kit) {
-        // Create a combined "super party" for the match system
-        Party combinedParty = new Party(party1.getLeader());
-        
-        // Add all members from both parties
-        for (UUID member : party1.getMembers()) {
-            if (!member.equals(party1.getLeader())) {
-                combinedParty.addMember(member);
-            }
-        }
-        for (UUID member : party2.getMembers()) {
-            combinedParty.addMember(member);
-        }
-        
-        // Reserve the arena
+        // Reserve arena
         plugin.getArenaManager().reserveArena(arena.getName());
         
-        // Create match object with special party vs party type
-        String matchId = "pvp_" + System.currentTimeMillis() + "_" + (int)(Math.random() * 1000);
-        Match match = new Match(matchId, combinedParty, arena, kit, "partyvs");
+        // Create match
+        String matchId = "partyduel_" + System.currentTimeMillis();
+        Match match = new Match(matchId, challengerParty, arena, kit, "partyvs");
         
-        // Manually assign teams based on original parties
-        int teamNum = 1;
-        for (UUID member : party1.getMembers()) {
-            match.getPlayerTeams().put(member, teamNum);
+        // Assign teams
+        match.assignPartyVsPartyTeams(challengerParty, challengedParty);
+        
+        // Set parties as in match
+        challengerParty.setInMatch(true);
+        challengedParty.setInMatch(true);
+        
+        // Start the match
+        plugin.getMatchManager().startPartyVsPartyMatch(match, challengerParty, challengedParty);
+        
+        // Notify players
+        for (Player member : challengerParty.getOnlineMembers()) {
+            member.sendMessage("§aDuel accepted! Starting match with kit: " + kit.getDisplayName());
         }
-        teamNum = 2;
-        for (UUID member : party2.getMembers()) {
-            match.getPlayerTeams().put(member, teamNum);
+        for (Player member : challengedParty.getOnlineMembers()) {
+            member.sendMessage("§aDuel accepted! Starting match with kit: " + kit.getDisplayName());
         }
         
-        // Set both parties as in match
-        party1.setInMatch(true);
-        party2.setInMatch(true);
-        
-        // Start the match using existing match manager
-        plugin.getMatchManager().startPartyVsPartyMatch(match, party1, party2);
-        
-        // Notify all players
-        for (Player player : party1.getOnlineMembers()) {
-            player.sendMessage("§aParty vs Party duel started! Kit: " + kit.getDisplayName());
-        }
-        for (Player player : party2.getOnlineMembers()) {
-            player.sendMessage("§aParty vs Party duel started! Kit: " + kit.getDisplayName());
+        // Remove duel and cancel expiration task
+        pendingDuels.remove(accepter.getUniqueId());
+        if (duel.getExpirationTask() != null) {
+            duel.getExpirationTask().cancel();
         }
     }
     
-    public void cleanExpiredDuels() {
-        Iterator<Map.Entry<UUID, PartyDuel>> iterator = pendingDuels.entrySet().iterator();
-        while (iterator.hasNext()) {
-            Map.Entry<UUID, PartyDuel> entry = iterator.next();
-            if (entry.getValue().isExpired()) {
-                iterator.remove();
-                
-                Player challenged = Bukkit.getPlayer(entry.getKey());
-                if (challenged != null && challenged.isOnline()) {
-                    challenged.sendMessage("§cA duel request has expired.");
-                }
-            }
+    public void declineDuel(Player decliner, String challengerName) {
+        PartyDuel duel = pendingDuels.get(decliner.getUniqueId());
+        if (duel == null) {
+            decliner.sendMessage("§cYou don't have any pending duel requests!");
+            return;
         }
+        
+        Player challenger = duel.getChallenger();
+        if (challenger == null || !challenger.getName().equalsIgnoreCase(challengerName)) {
+            decliner.sendMessage("§cDuel request not found!");
+            return;
+        }
+        
+        // Notify players
+        if (challenger.isOnline()) {
+            challenger.sendMessage("§c" + decliner.getName() + "'s party has declined your duel request.");
+        }
+        decliner.sendMessage("§cYou have declined the duel request from " + challenger.getName() + "'s party.");
+        
+        // Remove duel and cancel expiration task
+        pendingDuels.remove(decliner.getUniqueId());
+        if (duel.getExpirationTask() != null) {
+            duel.getExpirationTask().cancel();
+        }
+    }
+    
+    public boolean hasPendingDuel(Player player) {
+        return pendingDuels.containsKey(player.getUniqueId());
     }
     
     public void cleanup() {
+        for (PartyDuel duel : pendingDuels.values()) {
+            if (duel.getExpirationTask() != null) {
+                duel.getExpirationTask().cancel();
+            }
+        }
         pendingDuels.clear();
     }
 }

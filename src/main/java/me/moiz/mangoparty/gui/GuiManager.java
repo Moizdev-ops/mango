@@ -279,7 +279,7 @@ public class GuiManager implements Listener {
         // Store the challenged leader for later use
         challengerTargets.put(challenger.getUniqueId(), challengedLeader.getUniqueId());
         
-        player.openInventory(gui);
+        challenger.openInventory(gui);
     }
 
     private YamlConfiguration loadQueueConfig(String mode) {
