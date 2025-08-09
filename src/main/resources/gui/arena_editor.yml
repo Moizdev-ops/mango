@@ -1,0 +1,57 @@
+title: "§6Arena Editor - {arena_name}"
+size: 27
+
+buttons:
+  spawn1:
+    slot: 10
+    material: "RED_BED"
+    name: "§cSet Spawn 1"
+    lore:
+      - "§7Click to set spawn point 1"
+      - "§7Current: {spawn1_status}"
+    customModelData: 0
+  
+  spawn2:
+    slot: 11
+    material: "BLUE_BED"
+    name: "§9Set Spawn 2"
+    lore:
+      - "§7Click to set spawn point 2"
+      - "§7Current: {spawn2_status}"
+    customModelData: 0
+  
+  center:
+    slot: 12
+    material: "BEACON"
+    name: "§eSet Center"
+    lore:
+      - "§7Click to set arena center"
+      - "§7Current: {center_status}"
+    customModelData: 0
+  
+  corner1:
+    slot: 13
+    material: "STONE"
+    name: "§7Set Corner 1"
+    lore:
+      - "§7Click to set corner 1"
+      - "§7Current: {corner1_status}"
+    customModelData: 0
+  
+  corner2:
+    slot: 14
+    material: "COBBLESTONE"
+    name: "§8Set Corner 2"
+    lore:
+      - "§7Click to set corner 2"
+      - "§7Current: {corner2_status}"
+    customModelData: 0
+  
+  generate_schematic:
+    slot: 16
+    material: "PAPER"
+    name: "§aGenerate Schematic"
+    lore:
+      - "§7Click to save arena schematic"
+      - "§7Requires both corners to be set"
+    customModelData: 0

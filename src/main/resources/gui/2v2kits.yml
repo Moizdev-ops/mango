@@ -1,0 +1,13 @@
+title: "§62V2 Kit Selection"
+size: 27
+
+kits:
+  # Kits will be added here via /mango addkitgui <kit> 2v2 [slot]
+  # Example:
+  # bow:
+  #   slot: 15
+  #   material: BOW
+  #   name: "&aBow Kit"
+  #   lore:
+  #     - "&7Click to queue with this kit."
+  #     - "&eQueued: {queued}"

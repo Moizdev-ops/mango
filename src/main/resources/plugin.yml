@@ -1,0 +1,47 @@
+name: MangoParty
+version: 1.0.0
+main: me.moiz.mangoparty.MangoParty
+api-version: 1.21
+author: Moiz
+description: A comprehensive party system with arena management and kit system
+website: https://github.com/moiz/mangoparty
+
+depend: [WorldEdit, FastAsyncWorldEdit]
+
+commands:
+  party:
+    description: Party management commands
+    usage: /party <create|invite|join|transfer|leave|disband|match|challenge|acceptduel|declineduel|info>
+    aliases: [p, par, part]
+  mango:
+    description: MangoParty admin commands
+    usage: /mango <arena|create> [args...]
+    permission: mangoparty.admin
+  spectate:
+    description: Spectate other players during matches
+    usage: /spectate <player>
+    aliases: [spec]
+  1v1queue:
+    description: Join 1v1 queue with kit selection
+    usage: /1v1queue
+    aliases: [1v1, queue1v1]
+  2v2queue:
+    description: Join 2v2 queue with kit selection
+    usage: /2v2queue
+    aliases: [2v2, queue2v2]
+  3v3queue:
+    description: Join 3v3 queue with kit selection
+    usage: /3v3queue
+    aliases: [3v3, queue3v3]
+  leavequeue:
+    description: Leave current queue
+    usage: /leavequeue
+    aliases: [lq, queueleave]
+
+permissions:
+  mangoparty.admin:
+    description: Access to admin commands
+    default: op
+  mangoparty.use:
+    description: Access to party commands
+    default: true

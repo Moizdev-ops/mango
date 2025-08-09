@@ -1,0 +1,13 @@
+title: "§61V1 Kit Selection"
+size: 27
+
+kits:
+  # Kits will be added here via /mango addkitgui <kit> 1v1 [slot]
+  # Example:
+  # sword:
+  #   slot: 11
+  #   material: DIAMOND_SWORD
+  #   name: "&bSword Kit"
+  #   lore:
+  #     - "&7Click to queue with this kit."
+  #     - "&eQueued: {queued}"
