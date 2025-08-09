@@ -30,7 +30,7 @@ public class MangoTabCompleter implements TabCompleter {
         
         if (args.length == 1) {
             // First argument: main commands
-            List<String> commands = Arrays.asList("arena", "kit", "create", "addkitgui", "setspawn");
+            List<String> commands = Arrays.asList("arena", "kit", "create", "addkitgui", "setspawn", "reload");
             return commands.stream()
                     .filter(cmd -> cmd.toLowerCase().startsWith(args[0].toLowerCase()))
                     .collect(Collectors.toList());

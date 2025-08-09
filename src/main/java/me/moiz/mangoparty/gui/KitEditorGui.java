@@ -44,12 +44,19 @@ public class KitEditorGui implements Listener {
         if (!kitListFile.exists()) {
             plugin.saveResource("gui/kit_list.yml", false);
         }
-        if (!kitEditorFile.exists()) {
-            plugin.saveResource("gui/kit_editor.yml", false);
+        
+        // Force regenerate kit_editor.yml to include new buttons
+        if (kitEditorFile.exists()) {
+            kitEditorFile.delete();
         }
+        plugin.saveResource("gui/kit_editor.yml", false);
         
         kitListConfig = YamlConfiguration.loadConfiguration(kitListFile);
         kitEditorConfig = YamlConfiguration.loadConfiguration(kitEditorFile);
+    }
+
+    public void reloadConfigs() {
+        loadConfigs();
     }
     
     public void openKitListGui(Player player) {

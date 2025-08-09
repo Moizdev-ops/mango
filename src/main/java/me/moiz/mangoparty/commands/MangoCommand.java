@@ -72,6 +72,8 @@ public class MangoCommand implements CommandExecutor {
             handleAddKitGuiCommand(player, args);
         } else if (args[0].equalsIgnoreCase("setspawn")) {
             handleSetSpawnCommand(player);
+        } else if (args[0].equalsIgnoreCase("reload")) {
+            handleReloadCommand(player);
         } else {
             sendHelpMessage(player);
         }
@@ -81,6 +83,7 @@ public class MangoCommand implements CommandExecutor {
     
     private void sendHelpMessage(Player player) {
         player.sendMessage("§6=== MangoParty Admin Commands ===");
+        player.sendMessage("§e/mango reload §7- Reload plugin configurations");
         player.sendMessage("§e/mango arena editor §7- Open arena editor GUI");
         player.sendMessage("§e/mango kit editor §7- Open kit editor GUI");
         player.sendMessage("§e/mango arena create <name> §7- Create a new arena");
@@ -340,5 +343,13 @@ public class MangoCommand implements CommandExecutor {
     private void handleSetSpawnCommand(Player player) {
         plugin.setSpawnLocation(player.getLocation());
         player.sendMessage("§aSpawn location set to your current position!");
+    }
+
+    private void handleReloadCommand(Player player) {
+        // Reload kit editor configs
+        plugin.getKitEditorGui().reloadConfigs();
+        plugin.getGuiManager().reloadGuiConfigs();
+        
+        player.sendMessage("§aMangoParty configurations reloaded!");
     }
 }
