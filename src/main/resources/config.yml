@@ -58,3 +58,18 @@ messages:
   match-starting: "§aMatch starting in {seconds} seconds!"
   match-started: "§aMatch started! Good luck!"
   match-ended: "§cMatch ended!"
+  
+  # Party vs Party Duel Messages
+  party-duel:
+    challenge-received: "§6⚔ §e{challenger_party} §7has challenged your party to a duel! §6⚔"
+    kit-info: "§7Kit: §f{kit} §8| §7Expires in: §c60 seconds"
+    challenge-sent: "§aDuel request sent to §e{target_party} §awith kit: §f{kit}"
+    challenge-accepted: "§aDuel accepted! Starting match with kit: §f{kit}"
+    challenge-declined: "§c{target_party} §7has declined your duel request."
+    challenge-expired: "§cYour duel request to §e{target_party} §chas expired."
+    challenge-expired-target: "§cThe duel request from §e{challenger_party} §chas expired."
+    no-pending-duel: "§cYou don't have any pending duel requests!"
+    duel-not-found: "§cDuel request not found or challenger is offline!"
+    already-in-match: "§cOne of the parties is already in a match!"
+    no-available-arenas: "§cNo available arenas for the duel!"
+    kit-not-found: "§cKit not found!"

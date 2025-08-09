@@ -44,9 +44,8 @@ public class SpectatorListener implements Listener {
             return;
         }
         
-        // Prevent friendly fire in split matches (without message)
+        // Prevent friendly fire in all team-based matches
         if (match.getState() == Match.MatchState.ACTIVE && 
-            "split".equalsIgnoreCase(match.getMatchType()) && 
             event.getEntity() instanceof Player) {
             Player victim = (Player) event.getEntity();
             
@@ -55,9 +54,13 @@ public class SpectatorListener implements Listener {
                 int damagerTeam = match.getPlayerTeam(damager.getUniqueId());
                 int victimTeam = match.getPlayerTeam(victim.getUniqueId());
                 
-                if (damagerTeam == victimTeam && damagerTeam > 0) {
+                // Prevent friendly fire in all team-based matches (split, queue modes, party vs party)
+                if (damagerTeam == victimTeam && damagerTeam > 0 && 
+                    (match.getMatchType().equalsIgnoreCase("split") || 
+                     match.getMatchType().startsWith("queue_") || 
+                     match.getMatchType().equalsIgnoreCase("partyvs"))) {
                     event.setCancelled(true);
-                    return; // No message
+                    return; // No message to avoid spam
                 }
             }
         }

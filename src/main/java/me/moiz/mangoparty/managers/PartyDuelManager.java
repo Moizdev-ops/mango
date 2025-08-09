@@ -48,29 +48,46 @@ public class PartyDuelManager {
             return;
         }
         
+        // Get kit for display
+        Kit kit = plugin.getKitManager().getKit(kitName);
+        String kitDisplayName = kit != null ? kit.getDisplayName() : kitName;
+        
         // Create duel request
         PartyDuel duel = new PartyDuel(challenger, challengedLeader, kitName);
         pendingDuels.put(challengedLeader.getUniqueId(), duel);
         
         // Send messages
-        challenger.sendMessage("§aDuel request sent to " + challengedLeader.getName() + "'s party!");
+        challenger.sendMessage("§aDuel request sent to " + challengedLeader.getName() + "'s party with kit: " + kitDisplayName);
+        
+        // Get customizable messages from config
+        String challengeMessage = plugin.getConfig().getString("messages.party-duel.challenge-received", 
+            "§e{challenger_party} §7has challenged your party to a duel!");
+        String kitInfo = plugin.getConfig().getString("messages.party-duel.kit-info", 
+            "§7Kit: §f{kit} §8| §7Expires in: §c60 seconds");
+        
+        // Replace placeholders
+        challengeMessage = challengeMessage.replace("{challenger_party}", challenger.getName() + "'s Party")
+                                     .replace("{challenger}", challenger.getName())
+                                     .replace("{kit}", kitDisplayName);
+        kitInfo = kitInfo.replace("{kit}", kitDisplayName);
         
         // Create clickable accept/decline buttons
-        TextComponent message = new TextComponent("§e" + challenger.getName() + "'s party has challenged you to a duel!");
+        TextComponent message = new TextComponent(challengeMessage);
         
         TextComponent acceptButton = new TextComponent("§a[ACCEPT]");
-        acceptButton.setClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/party accept " + challenger.getName()));
+        acceptButton.setClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/party acceptchallenge " + challenger.getName()));
         acceptButton.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, 
             new ComponentBuilder("§aClick to accept the duel").create()));
         
         TextComponent declineButton = new TextComponent("§c[DECLINE]");
-        declineButton.setClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/party decline " + challenger.getName()));
+        declineButton.setClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/party declinechallenge " + challenger.getName()));
         declineButton.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, 
             new ComponentBuilder("§cClick to decline the duel").create()));
         
         // Send to challenged party
         for (Player member : challengedParty.getOnlineMembers()) {
             member.spigot().sendMessage(message);
+            member.sendMessage(kitInfo);
             member.spigot().sendMessage(acceptButton, new TextComponent(" "), declineButton);
         }
         
@@ -79,23 +96,32 @@ public class PartyDuelManager {
             @Override
             public void run() {
                 if (pendingDuels.remove(challengedLeader.getUniqueId()) != null) {
-                    challenger.sendMessage("§cYour duel request to " + challengedLeader.getName() + "'s party has expired.");
-                    challengedLeader.sendMessage("§cThe duel request from " + challenger.getName() + "'s party has expired.");
-                }
+                    String expiredMessage = plugin.getConfig().getString("messages.party-duel.challenge-expired",
+                        "§cYour duel request to {target_party} has expired.");
+                    String targetExpiredMessage = plugin.getConfig().getString("messages.party-duel.challenge-expired-target",
+                        "§cThe duel request from {challenger_party} has expired.");
+                
+                challenger.sendMessage(expiredMessage.replace("{target_party}", challengedLeader.getName() + "'s party"));
+                challengedLeader.sendMessage(targetExpiredMessage.replace("{challenger_party}", challenger.getName() + "'s party"));
             }
-        }.runTaskLater(plugin, 1200L)); // 60 seconds
-    }
+        }
+    }.runTaskLater(plugin, 1200L)); // 60 seconds
+}
     
     public void acceptDuel(Player accepter, String challengerName) {
         PartyDuel duel = pendingDuels.get(accepter.getUniqueId());
         if (duel == null) {
-            accepter.sendMessage("§cYou don't have any pending duel requests!");
+            String message = plugin.getConfig().getString("messages.party-duel.no-pending-duel", 
+                "§cYou don't have any pending duel requests!");
+            accepter.sendMessage(message);
             return;
         }
         
         Player challenger = duel.getChallenger();
         if (challenger == null || !challenger.isOnline() || !challenger.getName().equalsIgnoreCase(challengerName)) {
-            accepter.sendMessage("§cDuel request not found or challenger is offline!");
+            String message = plugin.getConfig().getString("messages.party-duel.duel-not-found", 
+                "§cDuel request not found or challenger is offline!");
+            accepter.sendMessage(message);
             pendingDuels.remove(accepter.getUniqueId());
             return;
         }
@@ -110,7 +136,9 @@ public class PartyDuelManager {
         }
         
         if (challengerParty.isInMatch() || challengedParty.isInMatch()) {
-            accepter.sendMessage("§cOne of the parties is already in a match!");
+            String message = plugin.getConfig().getString("messages.party-duel.already-in-match", 
+                "§cOne of the parties is already in a match!");
+            accepter.sendMessage(message);
             pendingDuels.remove(accepter.getUniqueId());
             return;
         }
@@ -118,16 +146,20 @@ public class PartyDuelManager {
         // Get arena and kit
         Arena arena = plugin.getArenaManager().getAvailableArena();
         if (arena == null) {
-            accepter.sendMessage("§cNo available arenas for the duel!");
-            challenger.sendMessage("§cNo available arenas for the duel!");
+            String message = plugin.getConfig().getString("messages.party-duel.no-available-arenas", 
+                "§cNo available arenas for the duel!");
+            accepter.sendMessage(message);
+            challenger.sendMessage(message);
             pendingDuels.remove(accepter.getUniqueId());
             return;
         }
         
         Kit kit = plugin.getKitManager().getKit(duel.getKitName());
         if (kit == null) {
-            accepter.sendMessage("§cKit not found!");
-            challenger.sendMessage("§cKit not found!");
+            String message = plugin.getConfig().getString("messages.party-duel.kit-not-found", 
+                "§cKit not found!");
+            accepter.sendMessage(message);
+            challenger.sendMessage(message);
             pendingDuels.remove(accepter.getUniqueId());
             return;
         }
@@ -149,12 +181,17 @@ public class PartyDuelManager {
         // Start the match
         plugin.getMatchManager().startPartyVsPartyMatch(match, challengerParty, challengedParty);
         
+        // Get customizable accept message
+        String acceptMessage = plugin.getConfig().getString("messages.party-duel.challenge-accepted", 
+            "§aDuel accepted! Starting match with kit: §f{kit}");
+        acceptMessage = acceptMessage.replace("{kit}", kit.getDisplayName());
+        
         // Notify players
         for (Player member : challengerParty.getOnlineMembers()) {
-            member.sendMessage("§aDuel accepted! Starting match with kit: " + kit.getDisplayName());
+            member.sendMessage(acceptMessage);
         }
         for (Player member : challengedParty.getOnlineMembers()) {
-            member.sendMessage("§aDuel accepted! Starting match with kit: " + kit.getDisplayName());
+            member.sendMessage(acceptMessage);
         }
         
         // Remove duel and cancel expiration task
@@ -167,19 +204,28 @@ public class PartyDuelManager {
     public void declineDuel(Player decliner, String challengerName) {
         PartyDuel duel = pendingDuels.get(decliner.getUniqueId());
         if (duel == null) {
-            decliner.sendMessage("§cYou don't have any pending duel requests!");
+            String message = plugin.getConfig().getString("messages.party-duel.no-pending-duel", 
+                "§cYou don't have any pending duel requests!");
+            decliner.sendMessage(message);
             return;
         }
         
         Player challenger = duel.getChallenger();
         if (challenger == null || !challenger.getName().equalsIgnoreCase(challengerName)) {
-            decliner.sendMessage("§cDuel request not found!");
+            String message = plugin.getConfig().getString("messages.party-duel.duel-not-found", 
+                "§cDuel request not found!");
+            decliner.sendMessage(message);
             return;
         }
         
+        // Get customizable decline message
+        String declineMessage = plugin.getConfig().getString("messages.party-duel.challenge-declined", 
+            "§c{target_party} §7has declined your duel request.");
+        declineMessage = declineMessage.replace("{target_party}", decliner.getName() + "'s party");
+        
         // Notify players
         if (challenger.isOnline()) {
-            challenger.sendMessage("§c" + decliner.getName() + "'s party has declined your duel request.");
+            challenger.sendMessage(declineMessage);
         }
         decliner.sendMessage("§cYou have declined the duel request from " + challenger.getName() + "'s party.");
         

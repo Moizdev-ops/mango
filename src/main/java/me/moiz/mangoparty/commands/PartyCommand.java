@@ -92,6 +92,20 @@ public class PartyCommand implements CommandExecutor {
                 }
                 handleDeclineDuelCommand(player, args[1]);
                 break;
+            case "acceptchallenge":
+                if (args.length < 2) {
+                    player.sendMessage("§cUsage: /party acceptchallenge <challenger>");
+                    return true;
+                }
+                handleAcceptChallengeCommand(player, args[1]);
+                break;
+            case "declinechallenge":
+                if (args.length < 2) {
+                    player.sendMessage("§cUsage: /party declinechallenge <challenger>");
+                    return true;
+                }
+                handleDeclineChallengeCommand(player, args[1]);
+                break;
             default:
                 sendHelpMessage(player);
                 break;
@@ -113,6 +127,8 @@ public class PartyCommand implements CommandExecutor {
         player.sendMessage("§e/party challenge <leader> §7- Challenge another party");
         player.sendMessage("§e/party acceptduel <challenger> §7- Accept a party duel");
         player.sendMessage("§e/party declineduel <challenger> §7- Decline a party duel");
+        player.sendMessage("§e/party acceptchallenge <challenger> §7- Accept a party duel challenge");
+        player.sendMessage("§e/party declinechallenge <challenger> §7- Decline a party duel challenge");
         player.sendMessage("§e/party info §7- View party information");
     }
     
@@ -334,6 +350,14 @@ public class PartyCommand implements CommandExecutor {
     }
 
     private void handleDeclineDuelCommand(Player player, String challengerName) {
+        plugin.getPartyDuelManager().declineDuel(player, challengerName);
+    }
+
+    private void handleAcceptChallengeCommand(Player player, String challengerName) {
+        plugin.getPartyDuelManager().acceptDuel(player, challengerName);
+    }
+
+    private void handleDeclineChallengeCommand(Player player, String challengerName) {
         plugin.getPartyDuelManager().declineDuel(player, challengerName);
     }
 }
