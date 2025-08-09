@@ -66,7 +66,7 @@ public class GuiManager implements Listener {
     }
     
     public void openMatchTypeGui(Player player) {
-        Inventory gui = Bukkit.createInventory(null, 18, "§6Select Match Type");
+        Inventory gui = Bukkit.createInventory(null, 27, "§6Select Match Type");
         
         // Party Split item
         ItemStack splitItem = new ItemStack(Material.IRON_SWORD);
@@ -74,9 +74,10 @@ public class GuiManager implements Listener {
         splitMeta.setDisplayName("§aParty Split");
         List<String> splitLore = new ArrayList<>();
         splitLore.add("§7Divide party into teams");
+        splitLore.add("§7and fight each other");
         splitMeta.setLore(splitLore);
         splitItem.setItemMeta(splitMeta);
-        gui.setItem(2, splitItem);
+        gui.setItem(10, splitItem);
         
         // Party FFA item
         ItemStack ffaItem = new ItemStack(Material.DIAMOND_SWORD);
@@ -84,9 +85,10 @@ public class GuiManager implements Listener {
         ffaMeta.setDisplayName("§cParty FFA");
         List<String> ffaLore = new ArrayList<>();
         ffaLore.add("§7Free for all battle");
+        ffaLore.add("§7Last player standing wins");
         ffaMeta.setLore(ffaLore);
         ffaItem.setItemMeta(ffaMeta);
-        gui.setItem(4, ffaItem);
+        gui.setItem(12, ffaItem);
         
         // Party vs Party item
         ItemStack pvpItem = new ItemStack(Material.PLAYER_HEAD);
@@ -94,9 +96,41 @@ public class GuiManager implements Listener {
         pvpMeta.setDisplayName("§eParty vs Party");
         List<String> pvpLore = new ArrayList<>();
         pvpLore.add("§7Challenge another party");
+        pvpLore.add("§7to an epic team battle");
         pvpMeta.setLore(pvpLore);
         pvpItem.setItemMeta(pvpMeta);
-        gui.setItem(6, pvpItem);
+        gui.setItem(14, pvpItem);
+        
+        // Queue modes
+        ItemStack queue1v1 = new ItemStack(Material.GOLDEN_SWORD);
+        ItemMeta queue1v1Meta = queue1v1.getItemMeta();
+        queue1v1Meta.setDisplayName("§61v1 Queue");
+        List<String> queue1v1Lore = new ArrayList<>();
+        queue1v1Lore.add("§7Join 1v1 ranked queue");
+        queue1v1Lore.add("§7Fight solo opponents");
+        queue1v1Meta.setLore(queue1v1Lore);
+        queue1v1.setItemMeta(queue1v1Meta);
+        gui.setItem(19, queue1v1);
+        
+        ItemStack queue2v2 = new ItemStack(Material.GOLDEN_AXE);
+        ItemMeta queue2v2Meta = queue2v2.getItemMeta();
+        queue2v2Meta.setDisplayName("§62v2 Queue");
+        List<String> queue2v2Lore = new ArrayList<>();
+        queue2v2Lore.add("§7Join 2v2 team queue");
+        queue2v2Lore.add("§7Fight with a teammate");
+        queue2v2Meta.setLore(queue2v2Lore);
+        queue2v2.setItemMeta(queue2v2Meta);
+        gui.setItem(21, queue2v2);
+        
+        ItemStack queue3v3 = new ItemStack(Material.NETHERITE_SWORD);
+        ItemMeta queue3v3Meta = queue3v3.getItemMeta();
+        queue3v3Meta.setDisplayName("§63v3 Queue");
+        List<String> queue3v3Lore = new ArrayList<>();
+        queue3v3Lore.add("§7Join 3v3 team queue");
+        queue3v3Lore.add("§7Epic team battles");
+        queue3v3Meta.setLore(queue3v3Lore);
+        queue3v3.setItemMeta(queue3v3Meta);
+        gui.setItem(23, queue3v3);
         
         player.openInventory(gui);
     }
@@ -331,6 +365,15 @@ public class GuiManager implements Listener {
             } else if (clicked.getType() == Material.PLAYER_HEAD) {
                 // Party vs Party selected
                 openPartyDuelGui(player);
+            } else if (clicked.getType() == Material.GOLDEN_SWORD) {
+                // 1v1 Queue selected
+                openQueueKitGui(player, "1v1");
+            } else if (clicked.getType() == Material.GOLDEN_AXE) {
+                // 2v2 Queue selected
+                openQueueKitGui(player, "2v2");
+            } else if (clicked.getType() == Material.NETHERITE_SWORD) {
+                // 3v3 Queue selected
+                openQueueKitGui(player, "3v3");
             }
         } else if (title.equals("§6Challenge Party")) {
             event.setCancelled(true);

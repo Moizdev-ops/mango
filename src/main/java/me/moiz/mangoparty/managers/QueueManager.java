@@ -71,8 +71,17 @@ public class QueueManager {
         }
     }
     
-    public void removePlayer(Player player) {
-        leaveQueue(player);
+    public void removePlayer(UUID playerId) {
+        QueueEntry entry = playerQueues.remove(playerId);
+        if (entry != null) {
+            List<QueueEntry> queueList = queues.get(entry.getMode()).get(entry.getKitName());
+            if (queueList != null) {
+                queueList.remove(entry);
+                if (queueList.isEmpty()) {
+                    queues.get(entry.getMode()).remove(entry.getKitName());
+                }
+            }
+        }
     }
     
     private void checkForMatch(String mode, String kitName) {
