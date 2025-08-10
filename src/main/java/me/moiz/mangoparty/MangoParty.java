@@ -4,6 +4,7 @@ import me.moiz.mangoparty.commands.*;
 import me.moiz.mangoparty.config.ConfigManager;
 import me.moiz.mangoparty.gui.GuiManager;
 import me.moiz.mangoparty.gui.ArenaEditorGui;
+import me.moiz.mangoparty.gui.AllowedKitsGui;
 import me.moiz.mangoparty.gui.KitEditorGui;
 import me.moiz.mangoparty.listeners.*;
 import me.moiz.mangoparty.managers.*;
