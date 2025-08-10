@@ -329,7 +329,7 @@ public class KitEditorGui implements Listener {
         ItemMeta queue3v3Meta = queue3v3Item.getItemMeta();
         queue3v3Meta.setDisplayName("§6Add to 3v3 Queue");
         queue3v3Meta.setLore(Arrays.asList("§7Add this kit to 3v3 ranked queue"));
-        queue3v3Item.setItemMeta(queue3v3Item);
+        queue3v3Item.setItemMeta(queue3v3Meta);
         gui.setItem(18, queue3v3Item);
         
         player.openInventory(gui);
@@ -359,7 +359,7 @@ public class KitEditorGui implements Listener {
         ItemMeta queue1v1Meta = queue1v1Item.getItemMeta();
         queue1v1Meta.setDisplayName("§cRemove from 1v1 Queue");
         queue1v1Meta.setLore(Arrays.asList("§7Remove this kit from 1v1 ranked queue"));
-        queue1v1Item.setItemMeta(queue1v1Item);
+        queue1v1Item.setItemMeta(queue1v1Meta);
         gui.setItem(14, queue1v1Item);
         
         // 2v2 Queue option
@@ -367,7 +367,7 @@ public class KitEditorGui implements Listener {
         ItemMeta queue2v2Meta = queue2v2Item.getItemMeta();
         queue2v2Meta.setDisplayName("§cRemove from 2v2 Queue");
         queue2v2Meta.setLore(Arrays.asList("§7Remove this kit from 2v2 ranked queue"));
-        queue2v2Item.setItemMeta(queue2v2Item);
+        queue2v2Item.setItemMeta(queue2v2Meta);
         gui.setItem(16, queue2v2Item);
         
         // 3v3 Queue option
@@ -375,7 +375,7 @@ public class KitEditorGui implements Listener {
         ItemMeta queue3v3Meta = queue3v3Item.getItemMeta();
         queue3v3Meta.setDisplayName("§cRemove from 3v3 Queue");
         queue3v3Meta.setLore(Arrays.asList("§7Remove this kit from 3v3 ranked queue"));
-        queue3v3Item.setItemMeta(queue3v3Item);
+        queue3v3Item.setItemMeta(queue3v3Meta);
         gui.setItem(18, queue3v3Item);
         
         player.openInventory(gui);
@@ -393,7 +393,7 @@ public class KitEditorGui implements Listener {
         splitLore.add("§7Click to change slot position");
         splitLore.add("§eYou'll be asked to type the new slot number");
         splitMeta.setLore(splitLore);
-        splitItem.setItemMeta(splitItem);
+        splitItem.setItemMeta(splitMeta);
         gui.setItem(10, splitItem);
         
         // FFA GUI slot editor
@@ -422,7 +422,7 @@ public class KitEditorGui implements Listener {
             queueLore.add("§7Click to change slot position");
             queueLore.add("§eYou'll be asked to type the new slot number");
             queueMeta.setLore(queueLore);
-            queueItem.setItemMeta(queueItem);
+            queueItem.setItemMeta(queueMeta);
             gui.setItem(queueSlots[i], queueItem);
         }
         

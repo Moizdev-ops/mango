@@ -245,6 +245,7 @@ public class Match {
     public String getId() { return id; }
     public Party getParty() { return party; }
     public Arena getArena() { return arena; }
+    public void setArena(Arena arena) { this.arena = arena; }
     public Kit getKit() { return kit; }
     public String getMatchType() { return matchType; }
     public MatchState getState() { return state; }
