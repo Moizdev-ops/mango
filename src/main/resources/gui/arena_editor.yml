@@ -1,80 +1,87 @@
-title: "§6Arena Editor - {arena_name}"
+title: "&6Arena Editor - {arena}"
 size: 27
 
-buttons:
-  spawn1:
+items:
+  set_center:
     slot: 10
-    material: "RED_BED"
-    name: "§cSet Spawn 1"
+    material: "COMPASS"
+    name: "&eSet Center"
     lore:
-      - "§7Click to set spawn point 1"
-      - "§7Current: {spawn1_status}"
-    customModelData: 0
-  
-  spawn2:
+      - "&7Click to set arena center"
+      - "&7Current: &f{center}"
+    action: "SET_CENTER"
+    
+  set_spawn1:
     slot: 11
-    material: "BLUE_BED"
-    name: "§9Set Spawn 2"
+    material: "RED_BED"
+    name: "&cSet Spawn 1"
     lore:
-      - "§7Click to set spawn point 2"
-      - "§7Current: {spawn2_status}"
-    customModelData: 0
-  
-  center:
+      - "&7Click to set spawn point 1"
+      - "&7Current: &f{spawn1}"
+    action: "SET_SPAWN1"
+    
+  set_spawn2:
     slot: 12
-    material: "BEACON"
-    name: "§eSet Center"
+    material: "BLUE_BED"
+    name: "&9Set Spawn 2"
     lore:
-      - "§7Click to set arena center"
-      - "§7Current: {center_status}"
-    customModelData: 0
-  
-  corner1:
+      - "&7Click to set spawn point 2"
+      - "&7Current: &f{spawn2}"
+    action: "SET_SPAWN2"
+    
+  set_corner1:
     slot: 13
     material: "STONE"
-    name: "§7Set Corner 1"
+    name: "&7Set Corner 1"
     lore:
-      - "§7Click to set corner 1"
-      - "§7Current: {corner1_status}"
-    customModelData: 0
-  
-  corner2:
+      - "&7Click to set corner 1"
+      - "&7Current: &f{corner1}"
+    action: "SET_CORNER1"
+    
+  set_corner2:
     slot: 14
     material: "COBBLESTONE"
-    name: "§8Set Corner 2"
+    name: "&7Set Corner 2"
     lore:
-      - "§7Click to set corner 2"
-      - "§7Current: {corner2_status}"
-    customModelData: 0
-  
-  generate_schematic:
-    slot: 16
-    material: "PAPER"
-    name: "§aGenerate Schematic"
-    lore:
-      - "§7Click to save arena schematic"
-      - "§7Requires both corners to be set"
-    customModelData: 0
-  
-  clone_arena:
+      - "&7Click to set corner 2"
+      - "&7Current: &f{corner2}"
+    action: "SET_CORNER2"
+    
+  save_arena:
     slot: 15
+    material: "EMERALD"
+    name: "&aSave Arena"
+    lore:
+      - "&7Click to save arena"
+      - "&7and generate schematic"
+    action: "SAVE_ARENA"
+    
+  clone_arena:
+    slot: 16
     material: "STRUCTURE_BLOCK"
-    name: "§bClone Arena"
+    name: "&bClone Arena"
     lore:
-      - "§7Click to clone this arena"
-      - "§7Pastes at your current location"
-      - "§7Requires complete arena setup"
-      - "§7Auto-generates new arena name"
-    customModelData: 0
-  
+      - "&7Click to clone this arena"
+      - "&7at your current location"
+    action: "CLONE_ARENA"
+    
   manage_kits:
-    slot: 4
+    slot: 19
     material: "CHEST"
-    name: "§6Manage Allowed Kits"
+    name: "&6Manage Allowed Kits"
     lore:
-      - "§7Left Click: §aAdd Kit"
-      - "§7Right Click: §cRemove Kit"
-      - "§7Current: {allowed_kits}"
+      - "&7Left Click: Add kit"
+      - "&7Right Click: Remove kit"
       - ""
-      - "§7Empty list = All kits allowed"
-    customModelData: 0
+      - "&eAllowed Kits:"
+      - "&f{allowed_kits}"
+    action: "MANAGE_KITS"
+    
+  toggle_regen:
+    slot: 20
+    material: "GRASS_BLOCK"
+    name: "&2Toggle Block Regeneration"
+    lore:
+      - "&7Click to toggle block regeneration"
+      - "&7Current: &f{regen_status}"
+    action: "TOGGLE_REGEN"
