@@ -260,7 +260,13 @@ public class ArenaManager {
     }
 
     public boolean saveSchematic(Arena arena) {
-        return saveArenaSchematic(arena);
+        try {
+            saveArenaSchematic(arena);
+            return true;
+        } catch (Exception e) {
+            plugin.getLogger().severe("Failed to save schematic: " + e.getMessage());
+            return false;
+        }
     }
 
     public void saveArenaSchematic(Arena arena) {

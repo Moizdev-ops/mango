@@ -7,6 +7,7 @@ import org.bukkit.configuration.file.YamlConfiguration;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -188,7 +189,7 @@ public class ConfigManager {
             kitSection.set("slot", slot);
             kitSection.set("material", kit.getIcon().getType().name());
             kitSection.set("name", kit.getDisplayName());
-            kitSection.set("lore", kit.getLore());
+            kitSection.set("lore", Arrays.asList("§7Click to select this kit"));
 
             config.save(guiFile);
             return true;
@@ -227,7 +228,7 @@ public class ConfigManager {
             kitSection.set("slot", slot);
             kitSection.set("material", kit.getIcon().getType().name());
             kitSection.set("name", kit.getDisplayName());
-            kitSection.set("lore", kit.getLore());
+            kitSection.set("lore", Arrays.asList("§7Click to queue with this kit"));
 
             config.save(guiFile);
             return true;
