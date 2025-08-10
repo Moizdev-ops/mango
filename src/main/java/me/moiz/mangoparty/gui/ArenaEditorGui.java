@@ -164,18 +164,47 @@ public class ArenaEditorGui implements Listener {
     private String processStatusPlaceholder(String line, String buttonKey, Arena arena) {
         switch (buttonKey) {
             case "spawn1":
-                return line.replace("{spawn1_status}", arena.getSpawn1() != null ? "§aSet" : "§cNot Set");
+                if (line.contains("{spawn1_status}")) {
+                    return line.replace("{spawn1_status}", arena.getSpawn1() != null ? "§aSet" : "§cNot Set");
+                } else if (line.contains("{spawn1_coords}") && arena.getSpawn1() != null) {
+                    return line.replace("{spawn1_coords}", String.format("§7X: %.1f, Y: %.1f, Z: %.1f", 
+                            arena.getSpawn1().getX(), arena.getSpawn1().getY(), arena.getSpawn1().getZ()));
+                }
+                break;
             case "spawn2":
-                return line.replace("{spawn2_status}", arena.getSpawn2() != null ? "§aSet" : "§cNot Set");
+                if (line.contains("{spawn2_status}")) {
+                    return line.replace("{spawn2_status}", arena.getSpawn2() != null ? "§aSet" : "§cNot Set");
+                } else if (line.contains("{spawn2_coords}") && arena.getSpawn2() != null) {
+                    return line.replace("{spawn2_coords}", String.format("§7X: %.1f, Y: %.1f, Z: %.1f", 
+                            arena.getSpawn2().getX(), arena.getSpawn2().getY(), arena.getSpawn2().getZ()));
+                }
+                break;
             case "center":
-                return line.replace("{center_status}", arena.getCenter() != null ? "§aSet" : "§cNot Set");
+                if (line.contains("{center_status}")) {
+                    return line.replace("{center_status}", arena.getCenter() != null ? "§aSet" : "§cNot Set");
+                } else if (line.contains("{center_coords}") && arena.getCenter() != null) {
+                    return line.replace("{center_coords}", String.format("§7X: %.1f, Y: %.1f, Z: %.1f", 
+                            arena.getCenter().getX(), arena.getCenter().getY(), arena.getCenter().getZ()));
+                }
+                break;
             case "corner1":
-                return line.replace("{corner1_status}", arena.getCorner1() != null ? "§aSet" : "§cNot Set");
+                if (line.contains("{corner1_status}")) {
+                    return line.replace("{corner1_status}", arena.getCorner1() != null ? "§aSet" : "§cNot Set");
+                } else if (line.contains("{corner1_coords}") && arena.getCorner1() != null) {
+                    return line.replace("{corner1_coords}", String.format("§7X: %.1f, Y: %.1f, Z: %.1f", 
+                            arena.getCorner1().getX(), arena.getCorner1().getY(), arena.getCorner1().getZ()));
+                }
+                break;
             case "corner2":
-                return line.replace("{corner2_status}", arena.getCorner2() != null ? "§aSet" : "§cNot Set");
-            default:
-                return line;
+                if (line.contains("{corner2_status}")) {
+                    return line.replace("{corner2_status}", arena.getCorner2() != null ? "§aSet" : "§cNot Set");
+                } else if (line.contains("{corner2_coords}") && arena.getCorner2() != null) {
+                    return line.replace("{corner2_coords}", String.format("§7X: %.1f, Y: %.1f, Z: %.1f", 
+                            arena.getCorner2().getX(), arena.getCorner2().getY(), arena.getCorner2().getZ()));
+                }
+                break;
         }
+        return line;
     }
     
     @EventHandler
@@ -265,28 +294,17 @@ public class ArenaEditorGui implements Listener {
                 player.sendMessage("§cFailed to generate schematic for arena: " + arenaName);
             }
             player.closeInventory();
+        } else if ("allowed_kits".equals(buttonType)) {
+            // Open the allowed kits GUI
+            plugin.getAllowedKitsGui().openAllowedKitsGui(player, arenaName);
         } else {
             // Set up location setting
             pendingLocationSets.put(player.getUniqueId(), buttonType);
             pendingArenas.put(player.getUniqueId(), arenaName);
             
             player.closeInventory();
-            player.sendMessage("§eShift + Left Click in air to set " + buttonType.replace("_", " ") + " to your current location.");
-            player.sendMessage("§7This will expire in 30 seconds.");
-            
-            // Schedule expiration
-            new BukkitRunnable() {
-                @Override
-                public void run() {
-                    if (pendingLocationSets.containsKey(player.getUniqueId())) {
-                        pendingLocationSets.remove(player.getUniqueId());
-                        pendingArenas.remove(player.getUniqueId());
-                        if (player.isOnline()) {
-                            player.sendMessage("§cLocation setting expired.");
-                        }
-                    }
-                }
-            }.runTaskLater(plugin, 600L); // 30 seconds
+            player.sendMessage("§aShift + Left Click to set " + buttonType + " for arena: " + arenaName);
+        }
         }
     }
     
@@ -309,31 +327,42 @@ public class ArenaEditorGui implements Listener {
             }
             
             Location location = player.getLocation();
+            String coordsInfo = String.format("§7X: %.1f, Y: %.1f, Z: %.1f", location.getX(), location.getY(), location.getZ());
             
             switch (buttonType) {
                 case "spawn1":
                     arena.setSpawn1(location);
                     player.sendMessage("§aSpawn 1 set for arena: " + arenaName);
+                    player.sendMessage(coordsInfo);
                     break;
                 case "spawn2":
                     arena.setSpawn2(location);
                     player.sendMessage("§aSpawn 2 set for arena: " + arenaName);
+                    player.sendMessage(coordsInfo);
                     break;
                 case "center":
                     arena.setCenter(location);
                     player.sendMessage("§aCenter set for arena: " + arenaName);
+                    player.sendMessage(coordsInfo);
                     break;
                 case "corner1":
                     arena.setCorner1(location);
                     player.sendMessage("§aCorner 1 set for arena: " + arenaName);
+                    player.sendMessage(coordsInfo);
                     break;
                 case "corner2":
                     arena.setCorner2(location);
                     player.sendMessage("§aCorner 2 set for arena: " + arenaName);
+                    player.sendMessage(coordsInfo);
                     break;
             }
             
             plugin.getArenaManager().saveArena(arena);
+            
+            // Reopen the arena editor GUI
+            Bukkit.getScheduler().runTaskLater(plugin, () -> {
+                openArenaEditorGui(player, arenaName);
+            }, 1L);
         }
     }
 }

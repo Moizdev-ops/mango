@@ -74,6 +74,7 @@ Continue building your app on:
 - **Multi-Arena Support**: Multiple arenas with automatic availability checking
 - **Arena Bounds**: Automatic teleportation when players leave arena boundaries
 - **Arena Reservation**: Smart arena allocation to prevent conflicts
+- **Arena Duplication**: Automatically create instances of arenas with proper offsets for concurrent matches
 
 ### 🎒 **Kit System**
 - **Custom Kits**: Create kits from player inventories
@@ -131,7 +132,8 @@ Continue building your app on:
 
 ### **Admin Commands**
 \`\`\`
-/mango arena editor              - Open arena management GUI
+/mango arena editor              - Open arena list GUI
+/mango arena editor <name>       - Open editor for specific arena
 /mango arena create <name>       - Create a new arena
 /mango arena corner1 <name>      - Set arena corner 1
 /mango arena corner2 <name>      - Set arena corner 2
@@ -148,6 +150,27 @@ Continue building your app on:
 /mango addkitgui <kit> <mode> [slot] - Add kit to GUI configuration
 /mango setspawn                  - Set server spawn location
 \`\`\`
+
+## 🏟️ Arena Duplication System
+
+MangoParty features a powerful arena duplication system that allows for concurrent matches using the same arena design:
+
+1. **How It Works**:
+   - When all existing arenas are in use, the system automatically creates a new instance
+   - The original arena's schematic is copied to a new location with proper offsets
+   - All coordinates (spawn points, corners, center) are recalculated relative to the new center
+   - The allowed kits configuration is preserved in the new instance
+
+2. **Offset Configuration**:
+   - Default X-axis offset: 200 blocks (configurable)
+   - Default Z-axis offset: 0 blocks (configurable)
+   - Each instance is numbered sequentially (e.g., arena1_instance1, arena1_instance2)
+
+3. **Benefits**:
+   - Unlimited concurrent matches using the same arena design
+   - No need to manually create multiple copies of the same arena
+   - Efficient use of server resources
+   - Automatic cleanup when matches end
 
 ## 🔧 Installation
 

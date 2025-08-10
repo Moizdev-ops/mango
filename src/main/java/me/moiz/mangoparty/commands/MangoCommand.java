@@ -43,7 +43,19 @@ public class MangoCommand implements CommandExecutor {
             }
             
             if (args[1].equalsIgnoreCase("editor")) {
-                plugin.getArenaEditorGui().openArenaListGui(player);
+                if (args.length > 2) {
+                    // Open editor for specific arena
+                    String arenaName = args[2];
+                    Arena arena = plugin.getArenaManager().getArena(arenaName);
+                    if (arena == null) {
+                        player.sendMessage("§cArena '" + arenaName + "' not found!");
+                        return true;
+                    }
+                    plugin.getArenaEditorGui().openArenaEditorGui(player, arenaName);
+                } else {
+                    // Open arena list GUI
+                    plugin.getArenaEditorGui().openArenaListGui(player);
+                }
                 return true;
             }
             
@@ -84,7 +96,8 @@ public class MangoCommand implements CommandExecutor {
     private void sendHelpMessage(Player player) {
         player.sendMessage("§6=== MangoParty Admin Commands ===");
         player.sendMessage("§e/mango reload §7- Reload plugin configurations");
-        player.sendMessage("§e/mango arena editor §7- Open arena editor GUI");
+        player.sendMessage("§e/mango arena editor §7- Open arena list GUI");
+        player.sendMessage("§e/mango arena editor <name> §7- Open editor for specific arena");
         player.sendMessage("§e/mango kit editor §7- Open kit editor GUI");
         player.sendMessage("§e/mango arena create <name> §7- Create a new arena");
         player.sendMessage("§e/mango arena corner1 <name> §7- Set arena corner 1");
@@ -102,7 +115,8 @@ public class MangoCommand implements CommandExecutor {
     
     private void sendArenaHelp(Player player) {
         player.sendMessage("§6=== Arena Commands ===");
-        player.sendMessage("§e/mango arena editor §7- Open arena editor GUI");
+        player.sendMessage("§e/mango arena editor §7- Open arena list GUI");
+        player.sendMessage("§e/mango arena editor <name> §7- Open editor for specific arena");
         player.sendMessage("§e/mango arena create <name> §7- Create a new arena");
         player.sendMessage("§e/mango arena corner1 <name> §7- Set arena corner 1");
         player.sendMessage("§e/mango arena corner2 <name> §7- Set arena corner 2");

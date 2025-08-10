@@ -9,6 +9,7 @@ buttons:
     lore:
       - "§7Click to set spawn point 1"
       - "§7Current: {spawn1_status}"
+      - "{spawn1_coords}"
     customModelData: 0
   
   spawn2:
@@ -18,6 +19,7 @@ buttons:
     lore:
       - "§7Click to set spawn point 2"
       - "§7Current: {spawn2_status}"
+      - "{spawn2_coords}"
     customModelData: 0
   
   center:
@@ -27,6 +29,7 @@ buttons:
     lore:
       - "§7Click to set arena center"
       - "§7Current: {center_status}"
+      - "{center_coords}"
     customModelData: 0
   
   corner1:
@@ -36,6 +39,7 @@ buttons:
     lore:
       - "§7Click to set corner 1"
       - "§7Current: {corner1_status}"
+      - "{corner1_coords}"
     customModelData: 0
   
   corner2:
@@ -45,6 +49,7 @@ buttons:
     lore:
       - "§7Click to set corner 2"
       - "§7Current: {corner2_status}"
+      - "{corner2_coords}"
     customModelData: 0
   
   allowed_kits:
