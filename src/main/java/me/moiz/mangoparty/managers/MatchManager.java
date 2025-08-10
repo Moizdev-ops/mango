@@ -56,6 +56,34 @@ public class MatchManager {
             return;
         }
         
+        // Check if kit is allowed in this arena
+        if (kit != null && !arena.isKitAllowed(kit.getName())) {
+            // Try to find an available arena that allows this kit
+            Arena availableArena = plugin.getArenaManager().getAvailableArenaForKit(kit.getName());
+            
+            // If no available arena found, create an instance of the original arena
+            if (availableArena == null) {
+                // Find a base arena that allows this kit
+                Arena baseArena = null;
+                for (Arena a : plugin.getArenaManager().getArenas().values()) {
+                    if (a.isComplete() && a.isKitAllowed(kit.getName()) && !a.isInstance()) {
+                        baseArena = a;
+                        break;
+                    }
+                }
+                
+                // If we found a base arena, create an instance
+                if (baseArena != null) {
+                    availableArena = plugin.getArenaManager().createArenaInstance(baseArena, kit.getName());
+                }
+            }
+            
+            // If we found or created an available arena, use it
+            if (availableArena != null) {
+                arena = availableArena;
+            }
+        }
+        
         // Reserve the arena
         plugin.getArenaManager().reserveArena(arena.getName());
         
@@ -128,6 +156,39 @@ public class MatchManager {
         }
         
         Arena arena = match.getArena();
+        Kit kit = match.getKit();
+        
+        // Check if kit is allowed in this arena
+        if (kit != null && !arena.isKitAllowed(kit.getName())) {
+            // Try to find an available arena that allows this kit
+            Arena availableArena = plugin.getArenaManager().getAvailableArenaForKit(kit.getName());
+            
+            // If no available arena found, create an instance of the original arena
+            if (availableArena == null) {
+                // Find a base arena that allows this kit
+                Arena baseArena = null;
+                for (Arena a : plugin.getArenaManager().getArenas().values()) {
+                    if (a.isComplete() && a.isKitAllowed(kit.getName()) && !a.isInstance()) {
+                        baseArena = a;
+                        break;
+                    }
+                }
+                
+                // If we found a base arena, create an instance
+                if (baseArena != null) {
+                    availableArena = plugin.getArenaManager().createArenaInstance(baseArena, kit.getName());
+                }
+            }
+            
+            // If we found or created an available arena, use it
+            if (availableArena != null) {
+                arena = availableArena;
+                match.setArena(arena);
+            }
+        }
+        
+        // Reserve the arena
+        plugin.getArenaManager().reserveArena(arena.getName());
         
         // Store match
         activeMatches.put(match.getId(), match);
@@ -165,6 +226,34 @@ public class MatchManager {
     }
 
     public void startQueueMatch(Party matchParty, Arena arena, Kit kit, String mode, List<Player> players) {
+        // Check if kit is allowed in this arena
+        if (kit != null && !arena.isKitAllowed(kit.getName())) {
+            // Try to find an available arena that allows this kit
+            Arena availableArena = plugin.getArenaManager().getAvailableArenaForKit(kit.getName());
+            
+            // If no available arena found, create an instance of the original arena
+            if (availableArena == null) {
+                // Find a base arena that allows this kit
+                Arena baseArena = null;
+                for (Arena a : plugin.getArenaManager().getArenas().values()) {
+                    if (a.isComplete() && a.isKitAllowed(kit.getName()) && !a.isInstance()) {
+                        baseArena = a;
+                        break;
+                    }
+                }
+                
+                // If we found a base arena, create an instance
+                if (baseArena != null) {
+                    availableArena = plugin.getArenaManager().createArenaInstance(baseArena, kit.getName());
+                }
+            }
+            
+            // If we found or created an available arena, use it
+            if (availableArena != null) {
+                arena = availableArena;
+            }
+        }
+        
         // Reserve the arena
         plugin.getArenaManager().reserveArena(arena.getName());
         

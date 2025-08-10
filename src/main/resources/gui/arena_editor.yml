@@ -47,6 +47,15 @@ buttons:
       - "§7Current: {corner2_status}"
     customModelData: 0
   
+  allowed_kits:
+    slot: 15
+    material: "DIAMOND_SWORD"
+    name: "§bAllowed Kits"
+    lore:
+      - "§7Click to manage allowed kits"
+      - "§7for this arena"
+    customModelData: 0
+  
   generate_schematic:
     slot: 16
     material: "PAPER"
