@@ -57,7 +57,7 @@ public class SpectateCommand implements CommandExecutor {
         targetMatch.addSpectator(player.getUniqueId());
 
         player.teleport(target.getLocation());
-        player.sendMessage("§aNow spectating " + target.getName() + " in match " + targetMatch.id + "!");
+        player.sendMessage("§aNow spectating " + target.getName() + " in match " + targetMatch.getId() + "!");
         
         return true;
     }

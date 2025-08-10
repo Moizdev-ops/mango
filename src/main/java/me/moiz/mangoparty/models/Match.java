@@ -27,6 +27,10 @@ public class Match {
     private Map<UUID, Integer> kills;
     private Map<UUID, Integer> deaths;
     private long startTime;
+
+    public String getId() {
+        return id;
+    }
     
     public Match(String id, Party party, Arena arena, Kit kit, String matchType) {
         this.id = id;
