@@ -51,73 +51,101 @@ public class ArenaManager {
     }
     
     private void loadArenas() {
+        plugin.getLogger().info("Attempting to load arenas...");
         if (!arenasFile.exists()) {
+            plugin.getLogger().info("arenas.yml not found, saving default resource.");
             plugin.saveResource("arenas.yml", false);
         }
         
         arenasConfig = YamlConfiguration.loadConfiguration(arenasFile);
+        plugin.getLogger().info("Loaded arenas.yml configuration.");
         
         ConfigurationSection arenasSection = arenasConfig.getConfigurationSection("arenas");
         if (arenasSection != null) {
+            plugin.getLogger().info("Found 'arenas' section in config. Processing arenas...");
             for (String arenaName : arenasSection.getKeys(false)) {
+                plugin.getLogger().info("Processing arena: " + arenaName);
                 ConfigurationSection arenaSection = arenasSection.getConfigurationSection(arenaName);
                 if (arenaSection != null) {
                     Arena arena = loadArenaFromConfig(arenaName, arenaSection);
                     if (arena != null) {
                         arenas.put(arenaName, arena);
+                        plugin.getLogger().info("Successfully loaded and added arena: " + arenaName);
+                    } else {
+                        plugin.getLogger().warning("Failed to load arena: " + arenaName + ". Skipping.");
                     }
+                } else {
+                    plugin.getLogger().warning("Arena section for " + arenaName + " is null. Skipping.");
                 }
             }
+        } else {
+            plugin.getLogger().info("No 'arenas' section found in arenas.yml.");
         }
+        plugin.getLogger().info("Finished loading arenas. Total arenas loaded: " + arenas.size());
     }
     
     private Arena loadArenaFromConfig(String name, ConfigurationSection section) {
+        plugin.getLogger().info("Loading arena from config: " + name);
         try {
             String world = section.getString("world");
             Arena arena = new Arena(name, world);
+            plugin.getLogger().info("Arena " + name + " world: " + world);
             
             if (section.contains("corner1")) {
                 arena.setCorner1(deserializeLocation(section.getConfigurationSection("corner1")));
+                plugin.getLogger().info("Arena " + name + " corner1 loaded.");
             }
             if (section.contains("corner2")) {
                 arena.setCorner2(deserializeLocation(section.getConfigurationSection("corner2")));
+                plugin.getLogger().info("Arena " + name + " corner2 loaded.");
             }
             if (section.contains("center")) {
                 arena.setCenter(deserializeLocation(section.getConfigurationSection("center")));
+                plugin.getLogger().info("Arena " + name + " center loaded.");
             }
             if (section.contains("spawn1")) {
                 arena.setSpawn1(deserializeLocation(section.getConfigurationSection("spawn1")));
+                plugin.getLogger().info("Arena " + name + " spawn1 loaded.");
             }
             if (section.contains("spawn2")) {
                 arena.setSpawn2(deserializeLocation(section.getConfigurationSection("spawn2")));
+                plugin.getLogger().info("Arena " + name + " spawn2 loaded.");
             }
             
             // Load allowed kits
             if (section.contains("allowed_kits")) {
                 List<String> allowedKits = section.getStringList("allowed_kits");
                 arena.setAllowedKits(allowedKits);
+                plugin.getLogger().info("Arena " + name + " allowed kits: " + String.join(", ", allowedKits));
             }
             
             // Load instance information
             if (section.contains("is_instance")) {
                 arena.setInstance(section.getBoolean("is_instance"));
+                plugin.getLogger().info("Arena " + name + " is_instance: " + arena.isInstance());
             }
             if (section.contains("original_arena")) {
                 arena.setOriginalArena(section.getString("original_arena"));
+                plugin.getLogger().info("Arena " + name + " original_arena: " + arena.getOriginalArena());
             }
             if (section.contains("instance_number")) {
                 arena.setInstanceNumber(section.getInt("instance_number"));
+                plugin.getLogger().info("Arena " + name + " instance_number: " + arena.getInstanceNumber());
             }
             if (section.contains("x_offset")) {
                 arena.setXOffset(section.getDouble("x_offset"));
+                plugin.getLogger().info("Arena " + name + " x_offset: " + arena.getXOffset());
             }
             if (section.contains("z_offset")) {
                 arena.setZOffset(section.getDouble("z_offset"));
+                plugin.getLogger().info("Arena " + name + " z_offset: " + arena.getZOffset());
             }
             
+            plugin.getLogger().info("Successfully loaded arena: " + name + ". Is complete: " + arena.isComplete());
             return arena;
         } catch (Exception e) {
             plugin.getLogger().warning("Failed to load arena: " + name + " - " + e.getMessage());
+            e.printStackTrace(); // Print stack trace for detailed debugging
             return null;
         }
     }
@@ -155,52 +183,103 @@ public class ArenaManager {
     }
     
     public Arena getAvailableArena() {
+        plugin.getLogger().info("Searching for an available arena...");
         for (Arena arena : arenas.values()) {
+            plugin.getLogger().info("Checking arena: " + arena.getName() + ", isComplete: " + arena.isComplete() + ", isReserved: " + reservedArenas.contains(arena.getName()));
             if (arena.isComplete() && !reservedArenas.contains(arena.getName())) {
+                plugin.getLogger().info("Found available arena: " + arena.getName());
                 return arena;
             }
         }
+        plugin.getLogger().info("No available arenas found.");
         return null; // No available arenas
     }
     
     public Arena getAvailableArenaForKit(String kitName) {
+        plugin.getLogger().info("Searching for available arena for kit: " + kitName);
         // First, try to find an existing available arena that allows this kit
         for (Arena arena : arenas.values()) {
+            plugin.getLogger().info("Checking arena: " + arena.getName() + ", isComplete: " + arena.isComplete() + ", isReserved: " + reservedArenas.contains(arena.getName()) + ", isKitAllowed: " + arena.isKitAllowed(kitName) + ", isInstance: " + arena.isInstance());
             if (arena.isComplete() && !reservedArenas.contains(arena.getName()) &&
                 arena.isKitAllowed(kitName) && !arena.isInstance()) { // Prefer non-instance arenas first
+                plugin.getLogger().info("Found available non-instance arena for kit " + kitName + ": " + arena.getName());
                 return arena;
             }
         }
 
+        plugin.getLogger().info("No non-instance arena found for kit " + kitName + ". Checking for available instances...");
         // If no non-instance arena is available, check for available instances
         for (Arena arena : arenas.values()) {
             if (arena.isComplete() && !reservedArenas.contains(arena.getName()) &&
                 arena.isKitAllowed(kitName) && arena.isInstance()) {
+                plugin.getLogger().info("Found available instance arena for kit " + kitName + ": " + arena.getName());
                 return arena;
             }
         }
 
+        plugin.getLogger().info("No available arena (instance or non-instance) found for kit " + kitName + ". Attempting to create a new instance.");
         // If no available arena (instance or non-instance) is found, create a new instance
         Arena baseArena = null;
         for (Arena a : arenas.values()) {
             // Find a complete, non-instance base arena that allows this kit
             if (a.isComplete() && a.isKitAllowed(kitName) && !a.isInstance()) {
                 baseArena = a;
+                plugin.getLogger().info("Found base arena for instance creation: " + a.getName());
                 break;
             }
         }
 
         if (baseArena != null) {
-            plugin.getLogger().info("No available arena for kit " + kitName + ". Creating new instance from " + baseArena.getName());
+            plugin.getLogger().info("Creating new arena instance from " + baseArena.getName() + " for kit: " + kitName);
             return createArenaInstance(baseArena, kitName);
         }
 
-        plugin.getLogger().warning("No base arena found to create an instance for kit: " + kitName);
+        plugin.getLogger().warning("No base arena found to create an instance for kit: " + kitName + ". Cannot provide an arena.");
         return null; // No available arenas and no base arena to create an instance
+    }
+
+    private Location offsetLocation(Location original, double xOffset, double zOffset) {
+        if (original == null) return null;
+        return new Location(original.getWorld(), original.getX() + xOffset, original.getY(), original.getZ() + zOffset, original.getYaw(), original.getPitch());
+    }
+
+    private void pasteArenaSchematic(Arena baseArena, Arena instanceArena) throws IOException {
+        plugin.getLogger().info("Pasting schematic for instance " + instanceArena.getName() + " from base " + baseArena.getName());
+        File schematicFile = new File(plugin.getDataFolder(), "schematics/" + baseArena.getName() + ".schem");
+        if (!schematicFile.exists()) {
+            plugin.getLogger().warning("Schematic file not found for base arena: " + baseArena.getName() + ". Path: " + schematicFile.getAbsolutePath());
+            return;
+        }
+
+        Clipboard clipboard = null;
+        ClipboardFormats formats = ClipboardFormats.getInstance();
+        try (ClipboardReader reader = formats.get(schematicFile).getReader(new FileInputStream(schematicFile))) {
+            clipboard = reader.read();
+        }
+
+        if (clipboard == null) {
+            plugin.getLogger().warning("Failed to read schematic from file: " + schematicFile.getName());
+            return;
+        }
+
+        try (EditSession editSession = WorldEdit.getInstance().newEditSessionBuilder(BukkitAdapter.adapt(Bukkit.getWorld(instanceArena.getWorld()))).build()) {
+            BlockVector3 pasteLocation = BlockVector3.at(instanceArena.getCorner1().getX(), instanceArena.getCorner1().getY(), instanceArena.getCorner1().getZ());
+            Operation operation = new ForwardExtentCopy(clipboard, clipboard.getRegion(), pasteLocation)
+                    .to(editSession)
+                    .ignoreAirBlocks(false) // Copy air blocks too
+                    .build();
+            Operations.complete(operation);
+            plugin.getLogger().info("Schematic pasted successfully for " + instanceArena.getName() + " at " + pasteLocation.toString());
+        } catch (Exception e) {
+            plugin.getLogger().severe("Error pasting schematic for arena instance " + instanceArena.getName() + ": " + e.getMessage());
+            e.printStackTrace();
+        }
     }
     
     public Arena createArenaInstance(Arena originalArena, String kitName) {
+        plugin.getLogger().info("Attempting to create arena instance for original arena: " + originalArena.getName() + " for kit: " + kitName);
         if (originalArena == null || !originalArena.isComplete()) {
+            plugin.getLogger().warning("Original arena is null or incomplete. Cannot create instance.");
             return null;
         }
         
@@ -210,9 +289,11 @@ public class ArenaManager {
         while (arenas.containsKey(baseName + "_instance" + instanceNumber)) {
             instanceNumber++;
         }
+        plugin.getLogger().info("Next instance number for " + baseName + ": " + instanceNumber);
         
         String instanceName = baseName + "_instance" + instanceNumber;
         Arena instance = new Arena(instanceName, originalArena.getWorld());
+        plugin.getLogger().info("Created new Arena object for instance: " + instanceName);
         
         // Copy settings from original arena
         instance.setInstance(true);
@@ -220,10 +301,11 @@ public class ArenaManager {
         instance.setInstanceNumber(instanceNumber);
         instance.setXOffset(originalArena.getXOffset() > 0 ? originalArena.getXOffset() : defaultXOffset);
         instance.setZOffset(originalArena.getZOffset() > 0 ? originalArena.getZOffset() : defaultZOffset);
+        plugin.getLogger().info("Instance settings copied. XOffset: " + instance.getXOffset() + ", ZOffset: " + instance.getZOffset());
         
         // Calculate new center position based on offset
         double newX = originalArena.getCenter().getX() + (instanceNumber * 500.0);
-        double newZ = originalArena.getCenter().getZ() + (instanceNumber * 500.0);
+        double newZ = originalArena.getCenter().getZ();
         Location newCenter = new Location(
             originalArena.getCenter().getWorld(),
             newX,
@@ -231,6 +313,7 @@ public class ArenaManager {
             newZ
         );
         instance.setCenter(newCenter);
+        plugin.getLogger().info("New center calculated: " + newCenter.toString());
         
         // Calculate new spawn and corner positions based on offsets from center
         if (originalArena.getSpawn1() != null && originalArena.getCenter() != null) {
@@ -244,6 +327,7 @@ public class ArenaManager {
                 originalArena.getSpawn1().getPitch()
             );
             instance.setSpawn1(newSpawn1);
+            plugin.getLogger().info("New spawn1 calculated: " + newSpawn1.toString());
         }
         
         if (originalArena.getSpawn2() != null && originalArena.getCenter() != null) {
@@ -257,6 +341,7 @@ public class ArenaManager {
                 originalArena.getSpawn2().getPitch()
             );
             instance.setSpawn2(newSpawn2);
+            plugin.getLogger().info("New spawn2 calculated: " + newSpawn2.toString());
         }
         
         if (originalArena.getCorner1() != null && originalArena.getCenter() != null) {
@@ -268,6 +353,7 @@ public class ArenaManager {
                 newCenter.getZ() + corner1Offset.getZ()
             );
             instance.setCorner1(newCorner1);
+            plugin.getLogger().info("New corner1 calculated: " + newCorner1.toString());
         }
         
         if (originalArena.getCorner2() != null && originalArena.getCenter() != null) {
@@ -279,32 +365,39 @@ public class ArenaManager {
                 newCenter.getZ() + corner2Offset.getZ()
             );
             instance.setCorner2(newCorner2);
+            plugin.getLogger().info("New corner2 calculated: " + newCorner2.toString());
         }
         
         // Copy allowed kits
         instance.setAllowedKits(new ArrayList<>(originalArena.getAllowedKits()));
+        plugin.getLogger().info("Allowed kits copied to instance: " + String.join(", ", instance.getAllowedKits()));
         
         // Save the instance
         arenas.put(instanceName, instance);
         saveArena(instance);
+        plugin.getLogger().info("Instance " + instanceName + " saved and added to arenas map.");
         
         // Paste the schematic at the new location
-        pasteSchematicForInstance(originalArena, instance);
+        boolean pasteSuccess = pasteSchematicForInstance(originalArena, instance);
+        plugin.getLogger().info("Schematic paste for " + instanceName + " successful: " + pasteSuccess);
         
         return instance;
     }
     
     private boolean pasteSchematicForInstance(Arena originalArena, Arena instance) {
+        plugin.getLogger().info("Attempting to paste schematic for instance: " + instance.getName() + " from original arena: " + originalArena.getName());
         try {
             File schematicsDir = new File(plugin.getDataFolder(), "schematics");
             File schematicFile = new File(schematicsDir, originalArena.getName() + ".schem");
+            plugin.getLogger().info("Schematic file path: " + schematicFile.getAbsolutePath());
             
             if (!schematicFile.exists()) {
-                plugin.getLogger().warning("Schematic file not found for original arena: " + originalArena.getName());
+                plugin.getLogger().warning("Schematic file not found for original arena: " + originalArena.getName() + ". Path: " + schematicFile.getAbsolutePath());
                 return false;
             }
             
             com.sk89q.worldedit.world.World world = BukkitAdapter.adapt(instance.getCorner1().getWorld());
+            plugin.getLogger().info("Adapted Bukkit world to WorldEdit world: " + world.getName());
             
             ClipboardFormat format = ClipboardFormats.findByAlias("schem");
             if (format == null) {
@@ -314,9 +407,11 @@ public class ArenaManager {
                 plugin.getLogger().severe("No schematic format found for reading!");
                 return false;
             }
+            plugin.getLogger().info("Using clipboard format: " + format.getName());
             
             try (ClipboardReader reader = format.getReader(new FileInputStream(schematicFile))) {
                 Clipboard clipboard = reader.read();
+                plugin.getLogger().info("Clipboard read successfully. Clipboard dimensions: " + clipboard.getDimensions().toString());
             
                 try (EditSession editSession = WorldEdit.getInstance().newEditSession(world)) {
                     // Calculate the minimum point where the schematic should be pasted
@@ -357,65 +452,74 @@ public class ArenaManager {
     }
     
     public void saveArena(Arena arena) {
+        plugin.getLogger().info("Saving arena: " + arena.getName());
         ConfigurationSection arenaSection = arenasConfig.createSection("arenas." + arena.getName());
         arenaSection.set("world", arena.getWorld());
+        plugin.getLogger().info("Arena " + arena.getName() + " world set to: " + arena.getWorld());
         
         if (arena.getCorner1() != null) {
             serializeLocation(arenaSection.createSection("corner1"), arena.getCorner1());
+            plugin.getLogger().info("Arena " + arena.getName() + " corner1 saved.");
         }
         if (arena.getCorner2() != null) {
             serializeLocation(arenaSection.createSection("corner2"), arena.getCorner2());
+            plugin.getLogger().info("Arena " + arena.getName() + " corner2 saved.");
         }
         if (arena.getCenter() != null) {
             serializeLocation(arenaSection.createSection("center"), arena.getCenter());
+            plugin.getLogger().info("Arena " + arena.getName() + " center saved.");
         }
         if (arena.getSpawn1() != null) {
             serializeLocation(arenaSection.createSection("spawn1"), arena.getSpawn1());
+            plugin.getLogger().info("Arena " + arena.getName() + " spawn1 saved.");
         }
         if (arena.getSpawn2() != null) {
             serializeLocation(arenaSection.createSection("spawn2"), arena.getSpawn2());
+            plugin.getLogger().info("Arena " + arena.getName() + " spawn2 saved.");
         }
         
-        // Save allowed kits
         arenaSection.set("allowed_kits", arena.getAllowedKits());
+        plugin.getLogger().info("Arena " + arena.getName() + " allowed kits saved: " + String.join(", ", arena.getAllowedKits()));
         
-        // Save instance information
         arenaSection.set("is_instance", arena.isInstance());
-        if (arena.getOriginalArena() != null) {
-            arenaSection.set("original_arena", arena.getOriginalArena());
-        }
+        arenaSection.set("original_arena", arena.getOriginalArena());
         arenaSection.set("instance_number", arena.getInstanceNumber());
         arenaSection.set("x_offset", arena.getXOffset());
         arenaSection.set("z_offset", arena.getZOffset());
+        plugin.getLogger().info("Arena " + arena.getName() + " instance info saved: is_instance=" + arena.isInstance() + ", original_arena=" + arena.getOriginalArena() + ", instance_number=" + arena.getInstanceNumber() + ", x_offset=" + arena.getXOffset() + ", z_offset=" + arena.getZOffset());
         
         try {
             arenasConfig.save(arenasFile);
+            plugin.getLogger().info("Arena " + arena.getName() + " successfully saved to file.");
         } catch (IOException e) {
-            plugin.getLogger().severe("Failed to save arenas.yml: " + e.getMessage());
+            plugin.getLogger().severe("Could not save arena " + arena.getName() + ": " + e.getMessage());
+            e.printStackTrace();
         }
     }
 
     public void deleteArena(String name) {
-        arenas.remove(name);
-        reservedArenas.remove(name);
-
-        // Remove from config
-        arenasConfig.set("arenas." + name, null);
+        plugin.getLogger().info("Attempting to delete arena: " + name);
+        if (arenas.containsKey(name)) {
+            arenas.remove(name);
+            plugin.getLogger().info("Arena " + name + " removed from in-memory map.");
+        } else {
+            plugin.getLogger().warning("Arena " + name + " not found in in-memory map for deletion.");
+        }
+        
+        if (arenasConfig.contains("arenas." + name)) {
+            arenasConfig.set("arenas." + name, null);
+            plugin.getLogger().info("Arena " + name + " marked for deletion in config.");
+        } else {
+            plugin.getLogger().warning("Arena " + name + " not found in config for deletion.");
+        }
 
         try {
             arenasConfig.save(arenasFile);
+            plugin.getLogger().info("Arena " + name + " successfully deleted from file.");
         } catch (IOException e) {
-            plugin.getLogger().severe("Failed to save arenas.yml after deletion: " + e.getMessage());
+            plugin.getLogger().severe("Could not delete arena " + name + ": " + e.getMessage());
+            e.printStackTrace();
         }
-
-        // Delete schematic file if it exists
-        File schematicsDir = new File(plugin.getDataFolder(), "schematics");
-        File schematicFile = new File(schematicsDir, name + ".schem");
-        if (schematicFile.exists()) {
-            schematicFile.delete();
-        }
-        
-        plugin.getLogger().info("Deleted arena: " + name);
     }
     
     public boolean saveSchematic(Arena arena) {

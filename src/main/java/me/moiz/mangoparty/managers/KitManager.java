@@ -182,4 +182,23 @@ public class KitManager {
         
         player.updateInventory();
     }
+
+    public void deleteKit(String name) {
+        if (kits.containsKey(name)) {
+            kits.remove(name);
+            File kitFile = new File(kitsDir, name + ".yml");
+            if (kitFile.exists()) {
+                if (kitFile.delete()) {
+                    plugin.getLogger().info("§a🗑️ Deleted kit file: §e" + name + ".yml");
+                } else {
+                    plugin.getLogger().severe("§c❌ Failed to delete kit file: §e" + name + ".yml");
+                }
+            } else {
+                plugin.getLogger().warning("§c⚠️ Kit file not found for deletion: §e" + name + ".yml");
+            }
+            plugin.getLogger().info("§a🗑️ Kit removed from memory: §e" + name);
+        } else {
+            plugin.getLogger().warning("§c⚠️ Kit not found in memory for deletion: §e" + name);
+        }
+    }
 }

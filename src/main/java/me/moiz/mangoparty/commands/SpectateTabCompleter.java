@@ -25,16 +25,11 @@ public class SpectateTabCompleter implements TabCompleter {
         }
         
         Player player = (Player) sender;
-        Match match = plugin.getMatchManager().getPlayerMatch(player);
-        
-        if (match == null || !match.isPlayerSpectator(player.getUniqueId())) {
-            return new ArrayList<>();
-        }
-        
+
         if (args.length == 1) {
-            // Suggest alive players in the same match
-            return match.getAllPlayers().stream()
-                    .filter(p -> match.isPlayerAlive(p.getUniqueId()))
+            // Suggest all players in any active match
+            return plugin.getMatchManager().getAllActiveMatches().stream()
+                    .flatMap(match -> match.getAllPlayers().stream())
                     .map(Player::getName)
                     .filter(name -> name.toLowerCase().startsWith(args[0].toLowerCase()))
                     .collect(Collectors.toList());

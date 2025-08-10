@@ -69,6 +69,13 @@ public class MangoCommand implements CommandExecutor {
             if (args[1].equalsIgnoreCase("editor")) {
                 plugin.getKitEditorGui().openKitListGui(player);
                 return true;
+            } else if (args[1].equalsIgnoreCase("delete")) {
+                if (args.length < 3) {
+                    player.sendMessage("§cUsage: /mango kit delete <name>");
+                    return true;
+                }
+                handleDeleteKitCommand(player, args[2]);
+                return true;
             }
         } else if (args[0].equalsIgnoreCase("create") && args.length > 1 && args[1].equalsIgnoreCase("kit")) {
             if (args.length < 3) {
@@ -131,6 +138,7 @@ public class MangoCommand implements CommandExecutor {
     private void sendKitHelp(Player player) {
         player.sendMessage("§6=== Kit Commands ===");
         player.sendMessage("§e/mango kit editor §7- Open kit editor GUI");
+        player.sendMessage("§e/mango kit delete <name> §7- Delete a kit");
     }
     
     private void handleArenaCommand(Player player, String[] args) {
@@ -306,6 +314,16 @@ public class MangoCommand implements CommandExecutor {
         // Remove from manager and config
         plugin.getArenaManager().deleteArena(arenaName);
         player.sendMessage("§aArena '" + arenaName + "' deleted!");
+    }
+
+    private void handleDeleteKitCommand(Player player, String kitName) {
+        Kit kit = plugin.getKitManager().getKit(kitName);
+        if (kit == null) {
+            player.sendMessage("§cKit '" + kitName + "' not found!");
+            return;
+        }
+        plugin.getKitManager().deleteKit(kitName);
+        player.sendMessage("§aKit '" + kitName + "' deleted!");
     }
 
     private void handleAddKitGuiCommand(Player player, String[] args) {

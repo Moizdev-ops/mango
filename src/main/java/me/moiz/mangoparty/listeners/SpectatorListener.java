@@ -30,16 +30,16 @@ public class SpectatorListener implements Listener {
         Match match = plugin.getMatchManager().getPlayerMatch(damager);
         
         if (match == null) return;
-        
-        // Prevent damage during countdown or preparation
-        if (match.getState() == Match.MatchState.COUNTDOWN || 
-            match.getState() == Match.MatchState.PREPARING) {
+
+        // Prevent spectators from dealing damage
+        if (match.isPlayerSpectator(damager.getUniqueId())) {
             event.setCancelled(true);
             return;
         }
-        
-        // Prevent spectators from dealing damage
-        if (match.isPlayerSpectator(damager.getUniqueId())) {
+
+        // Prevent damage during countdown or preparation
+        if (match.getState() == Match.MatchState.COUNTDOWN || 
+            match.getState() == Match.MatchState.PREPARING) {
             event.setCancelled(true);
             return;
         }
@@ -89,10 +89,7 @@ public class SpectatorListener implements Listener {
         Match match = plugin.getMatchManager().getPlayerMatch(player);
         
         if (match != null && match.isPlayerSpectator(player.getUniqueId())) {
-            // Allow spectators to interact but prevent block changes
-            if (event.getClickedBlock() != null) {
-                event.setCancelled(true);
-            }
+            event.setCancelled(true);
         }
     }
     
