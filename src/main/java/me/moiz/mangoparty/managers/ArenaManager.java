@@ -39,8 +39,8 @@ public class ArenaManager {
     private Set<String> reservedArenas; // Track which arenas are in use
     private File arenasFile;
     private YamlConfiguration arenasConfig;
-    private double defaultXOffset = 200.0; // Default X-axis offset for arena instances
-    private double defaultZOffset = 0.0; // Default Z-axis offset for arena instances
+    private double defaultXOffset = 500.0; // Default X-axis offset for arena instances
+    private double defaultZOffset = 500.0; // Default Z-axis offset for arena instances
     
     public ArenaManager(MangoParty plugin) {
         this.plugin = plugin;
@@ -222,8 +222,8 @@ public class ArenaManager {
         instance.setZOffset(originalArena.getZOffset() > 0 ? originalArena.getZOffset() : defaultZOffset);
         
         // Calculate new center position based on offset
-        double newX = originalArena.getCenter().getX() + (instanceNumber * instance.getXOffset());
-        double newZ = originalArena.getCenter().getZ() + (instanceNumber * instance.getZOffset());
+        double newX = originalArena.getCenter().getX() + (instanceNumber * 500.0);
+        double newZ = originalArena.getCenter().getZ() + (instanceNumber * 500.0);
         Location newCenter = new Location(
             originalArena.getCenter().getWorld(),
             newX,

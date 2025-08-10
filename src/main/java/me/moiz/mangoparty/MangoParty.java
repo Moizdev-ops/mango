@@ -24,6 +24,7 @@ public final class MangoParty extends JavaPlugin {
     private QueueManager queueManager;
     private ArenaEditorGui arenaEditorGui;
     private KitEditorGui kitEditorGui;
+    private AllowedKitsGui allowedKitsGui;
     
     // Listeners
     private PlayerConnectionListener playerConnectionListener;
@@ -52,6 +53,7 @@ public final class MangoParty extends JavaPlugin {
         queueManager = new QueueManager(this);
         arenaEditorGui = new ArenaEditorGui(this);
         kitEditorGui = new KitEditorGui(this);
+        allowedKitsGui = new AllowedKitsGui(this);
         
         // Initialize listeners
         playerConnectionListener = new PlayerConnectionListener(this);
@@ -165,6 +167,7 @@ public final class MangoParty extends JavaPlugin {
     public QueueManager getQueueManager() { return queueManager; }
     public ArenaEditorGui getArenaEditorGui() { return arenaEditorGui; }
     public KitEditorGui getKitEditorGui() { return kitEditorGui; }
+    public AllowedKitsGui getAllowedKitsGui() { return allowedKitsGui; }
     public SpectatorListener getSpectatorListener() { return spectatorListener; }
     public Location getSpawnLocation() { return spawnLocation; }
 }

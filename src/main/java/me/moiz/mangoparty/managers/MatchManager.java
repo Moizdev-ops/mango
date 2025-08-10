@@ -47,13 +47,15 @@ public class MatchManager {
     }
     
     public void startMatchPreparation(Player player, Kit kit, String matchType) {
-        Party party = plugin.getPartyManager().getPlayerParty(player);
+        Party party = plugin.getPartyManager().getParty(player);
 
         if (party == null) {
             // Create a temporary party for the single player
-            party = new Party(player.getUniqueId());
-            plugin.getPartyManager().addParty(party);
-            party.addMember(player.getUniqueId());
+            party = plugin.getPartyManager().createParty(player);
+             if (party == null) {
+                 player.sendMessage("§cFailed to create a temporary party. Please try again.");
+                 return;
+             }
         }
 
         // Find an available arena that allows this kit
