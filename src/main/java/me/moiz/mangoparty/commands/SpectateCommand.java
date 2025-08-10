@@ -24,17 +24,6 @@ public class SpectateCommand implements CommandExecutor {
         }
         
         Player player = (Player) sender;
-        Match match = plugin.getMatchManager().getPlayerMatch(player);
-        
-        if (match == null) {
-            player.sendMessage("§cYou are not in a match!");
-            return true;
-        }
-        
-        if (!match.isPlayerSpectator(player.getUniqueId())) {
-            player.sendMessage("§cYou must be spectating to use this command!");
-            return true;
-        }
         
         if (args.length == 0) {
             player.sendMessage("§cUsage: /spectate <player>");
@@ -48,21 +37,17 @@ public class SpectateCommand implements CommandExecutor {
         }
         
         Match targetMatch = plugin.getMatchManager().getPlayerMatch(target);
-        if (targetMatch == null || !targetMatch.getId().equals(match.getId())) {
-            player.sendMessage("§cThat player is not in your match!");
+        if (targetMatch == null) {
+            player.sendMessage("§cThat player is not currently in a match!");
             return true;
         }
-        
-        if (!match.isPlayerAlive(target.getUniqueId())) {
-            player.sendMessage("§cThat player is not alive!");
-            return true;
-        }
-        
-        // Teleport to target
-        player.teleport(target.getLocation());
-        player.setGameMode(GameMode.SURVIVAL);
+
+        // Set player to spectator mode and teleport
+        player.setGameMode(GameMode.SPECTATOR);
         player.setAllowFlight(true);
         player.setFlying(true);
+        
+        player.teleport(target.getLocation());
         player.sendMessage("§aNow spectating " + target.getName());
         
         return true;

@@ -305,7 +305,6 @@ public class ArenaEditorGui implements Listener {
             player.closeInventory();
             player.sendMessage("§aShift + Left Click to set " + buttonType + " for arena: " + arenaName);
         }
-        }
     }
     
     @EventHandler

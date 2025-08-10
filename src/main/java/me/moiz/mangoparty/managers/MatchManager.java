@@ -46,6 +46,44 @@ public class MatchManager {
         return "match_" + System.currentTimeMillis() + "_" + (int)(Math.random() * 1000);
     }
     
+    public void startMatchPreparation(Player player, Kit kit, String matchType) {
+        Party party = plugin.getPartyManager().getPlayerParty(player);
+
+        if (party == null) {
+            // Create a temporary party for the single player
+            party = new Party(player.getUniqueId());
+            plugin.getPartyManager().addParty(party);
+            party.addMember(player.getUniqueId());
+        }
+
+        // Find an available arena that allows this kit
+        Arena arena = plugin.getArenaManager().getAvailableArenaForKit(kit.getName());
+
+        // If no available arena found, create an instance of the original arena
+        if (arena == null) {
+            // Find a base arena that allows this kit
+            Arena baseArena = null;
+            for (Arena a : plugin.getArenaManager().getArenas().values()) {
+                if (a.isComplete() && a.isKitAllowed(kit.getName()) && !a.isInstance()) {
+                    baseArena = a;
+                    break;
+                }
+            }
+
+            // If we found a base arena, create an instance
+            if (baseArena != null) {
+                arena = plugin.getArenaManager().createArenaInstance(baseArena, kit.getName());
+            }
+        }
+
+        if (arena == null) {
+            player.sendMessage("§cNo available arenas for this kit. Please try again later.");
+            return;
+        }
+
+        startMatch(party, arena, kit, matchType);
+    }
+
     public void startMatch(Party party, Arena arena, Kit kit, String matchType) {
         if (party.isInMatch()) {
             return; // Party already in match

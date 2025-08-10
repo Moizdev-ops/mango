@@ -450,11 +450,27 @@ public class GuiManager implements Listener {
         }
     }
 
+
+
     private void handleRegularKitSelection(Player player, String title, int slot) {
-        // Existing kit selection logic
-        String matchType = title.contains("Split") ? "split" : "ffa";
-        YamlConfiguration config = "split".equalsIgnoreCase(matchType) ? splitConfig : ffaConfig;
-        
+        String matchType = null;
+        if (title.contains("Split")) {
+            matchType = "split";
+        } else if (title.contains("FFA")) {
+            matchType = "ffa";
+        }
+
+        if (matchType == null) return;
+
+        YamlConfiguration config = null;
+        if (matchType.equals("split")) {
+            config = splitConfig;
+        } else if (matchType.equals("ffa")) {
+            config = ffaConfig;
+        }
+
+        if (config == null) return;
+
         ConfigurationSection kitsSection = config.getConfigurationSection("kits");
         if (kitsSection != null) {
             for (String kitKey : kitsSection.getKeys(false)) {
@@ -462,12 +478,11 @@ public class GuiManager implements Listener {
                 if (kitSection != null && kitSection.getInt("slot") == slot) {
                     String kitName = kitSection.getString("kit");
                     Kit kit = plugin.getKitManager().getKit(kitName);
-                    
                     if (kit != null) {
-                        startMatchPreparation(player, kit, matchType);
+                        plugin.getMatchManager().startMatchPreparation(player, kit, matchType);
                         player.closeInventory();
-                        return;
                     }
+                    return;
                 }
             }
         }

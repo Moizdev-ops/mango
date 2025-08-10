@@ -164,13 +164,39 @@ public class ArenaManager {
     }
     
     public Arena getAvailableArenaForKit(String kitName) {
+        // First, try to find an existing available arena that allows this kit
         for (Arena arena : arenas.values()) {
-            if (arena.isComplete() && !reservedArenas.contains(arena.getName()) && 
-                arena.isKitAllowed(kitName)) {
+            if (arena.isComplete() && !reservedArenas.contains(arena.getName()) &&
+                arena.isKitAllowed(kitName) && !arena.isInstance()) { // Prefer non-instance arenas first
                 return arena;
             }
         }
-        return null; // No available arenas for this kit
+
+        // If no non-instance arena is available, check for available instances
+        for (Arena arena : arenas.values()) {
+            if (arena.isComplete() && !reservedArenas.contains(arena.getName()) &&
+                arena.isKitAllowed(kitName) && arena.isInstance()) {
+                return arena;
+            }
+        }
+
+        // If no available arena (instance or non-instance) is found, create a new instance
+        Arena baseArena = null;
+        for (Arena a : arenas.values()) {
+            // Find a complete, non-instance base arena that allows this kit
+            if (a.isComplete() && a.isKitAllowed(kitName) && !a.isInstance()) {
+                baseArena = a;
+                break;
+            }
+        }
+
+        if (baseArena != null) {
+            plugin.getLogger().info("No available arena for kit " + kitName + ". Creating new instance from " + baseArena.getName());
+            return createArenaInstance(baseArena, kitName);
+        }
+
+        plugin.getLogger().warning("No base arena found to create an instance for kit: " + kitName);
+        return null; // No available arenas and no base arena to create an instance
     }
     
     public Arena createArenaInstance(Arena originalArena, String kitName) {
