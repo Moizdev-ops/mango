@@ -33,6 +33,10 @@ public class MatchManager {
         return matchId != null ? activeMatches.get(matchId) : null;
     }
 
+    public Collection<Match> getAllActiveMatches() {
+        return activeMatches.values();
+    }
+
     public void eliminatePlayer(Player player, Match match) {
         match.eliminatePlayer(player.getUniqueId());
         

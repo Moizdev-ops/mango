@@ -50,14 +50,14 @@ public class SpectateCommand implements CommandExecutor {
         // If player is already spectating, remove them from their current match's spectator list
         Match currentMatch = plugin.getMatchManager().getPlayerMatch(player);
         if (currentMatch != null && currentMatch.isPlayerSpectator(player.getUniqueId())) {
-            currentMatch.removeSpectator(player);
+            currentMatch.removeSpectator(player.getUniqueId());
         }
 
         // Add player to the target match's spectator list
-        targetMatch.addSpectator(player);
+        targetMatch.addSpectator(player.getUniqueId());
 
         player.teleport(target.getLocation());
-        player.sendMessage("§aNow spectating " + target.getName() + " in match " + targetMatch.getMatchId() + "!");
+        player.sendMessage("§aNow spectating " + target.getName() + " in match " + targetMatch.id + "!");
         
         return true;
     }

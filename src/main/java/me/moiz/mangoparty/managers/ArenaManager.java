@@ -252,8 +252,8 @@ public class ArenaManager {
         }
 
         Clipboard clipboard = null;
-        ClipboardFormats formats = ClipboardFormats.getInstance();
-        try (ClipboardReader reader = formats.get(schematicFile).getReader(new FileInputStream(schematicFile))) {
+        ClipboardFormat format = ClipboardFormats.findByFile(schematicFile);
+        try (ClipboardReader reader = format.getReader(new FileInputStream(schematicFile))) {
             clipboard = reader.read();
         }
 
@@ -262,10 +262,11 @@ public class ArenaManager {
             return;
         }
 
-        try (EditSession editSession = WorldEdit.getInstance().newEditSessionBuilder(BukkitAdapter.adapt(Bukkit.getWorld(instanceArena.getWorld()))).build()) {
+        try (EditSession editSession = WorldEdit.getInstance().newEditSessionBuilder().setWorld(BukkitAdapter.adapt(Bukkit.getWorld(instanceArena.getWorld()))).build()) {
             BlockVector3 pasteLocation = BlockVector3.at(instanceArena.getCorner1().getX(), instanceArena.getCorner1().getY(), instanceArena.getCorner1().getZ());
-            Operation operation = new ForwardExtentCopy(clipboard, clipboard.getRegion(), pasteLocation)
-                    .to(editSession)
+            Operation operation = new ClipboardHolder(clipboard)
+                    .createPaste(editSession)
+                    .to(pasteLocation)
                     .ignoreAirBlocks(false) // Copy air blocks too
                     .build();
             Operations.complete(operation);
