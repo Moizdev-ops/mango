@@ -1,10 +1,8 @@
 package me.moiz.mangoparty.gui;
 
 import me.moiz.mangoparty.MangoParty;
-import me.moiz.mangoparty.config.ConfigManager;
-import me.moiz.mangoparty.managers.KitManager;
 import me.moiz.mangoparty.models.Kit;
-import me.moiz.mangoparty.utils.HexUtils;
+import me.moiz.mangoparty.models.KitRules;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.configuration.ConfigurationSection;
@@ -20,6 +18,7 @@ import org.bukkit.inventory.meta.ItemMeta;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -27,32 +26,62 @@ import java.util.UUID;
 
 public class KitEditorGui implements Listener {
     private MangoParty plugin;
-    private KitManager kitManager;
-    private ConfigManager configManager;
-    private Map<UUID, String> editingKit;
-    private Map<UUID, String> waitingForSlotInput;
-    private Map<UUID, String> slotInputType;
-    private Map<UUID, Long> inputTimeout;
-
+    private YamlConfiguration kitListConfig;
+    private YamlConfiguration kitEditorConfig;
+    
+    // Chat input handling
+    private Map<UUID, SlotEditSession> pendingSlotEdits = new HashMap<>();
+    
+    private static class SlotEditSession {
+        String kitName;
+        String guiType;
+        
+        SlotEditSession(String kitName, String guiType) {
+            this.kitName = kitName;
+            this.guiType = guiType;
+        }
+    }
+    
     public KitEditorGui(MangoParty plugin) {
         this.plugin = plugin;
-        this.kitManager = plugin.getKitManager();
-        this.configManager = plugin.getConfigManager();
-        this.editingKit = new HashMap<>();
-        this.waitingForSlotInput = new HashMap<>();
-        this.slotInputType = new HashMap<>();
-        this.inputTimeout = new HashMap<>();
+        loadConfigs();
+        Bukkit.getPluginManager().registerEvents(this, plugin);
+    }
+    
+    private void loadConfigs() {
+        File guiDir = new File(plugin.getDataFolder(), "gui");
+        if (!guiDir.exists()) {
+            guiDir.mkdirs();
+        }
         
-        plugin.getServer().getPluginManager().registerEvents(this, plugin);
+        File kitListFile = new File(guiDir, "kit_list.yml");
+        File kitEditorFile = new File(guiDir, "kit_editor.yml");
+        
+        if (!kitListFile.exists()) {
+            plugin.saveResource("gui/kit_list.yml", false);
+        }
+        
+        // Force regenerate kit_editor.yml to include new buttons
+        if (kitEditorFile.exists()) {
+            kitEditorFile.delete();
+        }
+        plugin.saveResource("gui/kit_editor.yml", false);
+        
+        kitListConfig = YamlConfiguration.loadConfiguration(kitListFile);
+        kitEditorConfig = YamlConfiguration.loadConfiguration(kitEditorFile);
     }
 
+    public void reloadConfigs() {
+        loadConfigs();
+    }
+    
     public void openKitListGui(Player player) {
-        String title = HexUtils.colorize("&6Kit Manager");
-        int size = 54;
+        String title = kitListConfig.getString("title", "§6Kit Manager");
+        int size = kitListConfig.getInt("size", 54);
         
         Inventory gui = Bukkit.createInventory(null, size, title);
         
-        Map<String, Kit> kits = kitManager.getKits();
+        Map<String, Kit> kits = plugin.getKitManager().getKits();
         int slot = 0;
         
         for (Kit kit : kits.values()) {
@@ -65,148 +94,403 @@ public class KitEditorGui implements Listener {
         
         player.openInventory(gui);
     }
-
+    
     private ItemStack createKitItem(Kit kit) {
-        ItemStack item = new ItemStack(Material.CHEST);
+        ConfigurationSection kitConfig = kitListConfig.getConfigurationSection("kits." + kit.getName());
+        ConfigurationSection defaultConfig = kitListConfig.getConfigurationSection("default");
+        
+        String materialName = kitConfig != null ? kitConfig.getString("material") : defaultConfig.getString("material");
+        Material material = Material.valueOf(materialName);
+        
+        ItemStack item = new ItemStack(material);
         ItemMeta meta = item.getItemMeta();
         
-        meta.setDisplayName(HexUtils.colorize("&e" + kit.getName()));
+        String name = kitConfig != null ? kitConfig.getString("name") : defaultConfig.getString("name");
+        name = name.replace("{kit_name}", kit.getName());
+        meta.setDisplayName(name);
         
-        List<String> lore = new ArrayList<>();
-        lore.add(HexUtils.colorize("&7Click to edit"));
-        meta.setLore(lore);
+        List<String> lore = kitConfig != null ? kitConfig.getStringList("lore") : defaultConfig.getStringList("lore");
+        List<String> processedLore = new ArrayList<>();
+        for (String line : lore) {
+            line = line.replace("{kit_name}", kit.getName());
+            line = line.replace("{kit_display_name}", kit.getDisplayName());
+            processedLore.add(line);
+        }
+        meta.setLore(processedLore);
+        
+        int customModelData = kitConfig != null ? kitConfig.getInt("customModelData") : defaultConfig.getInt("customModelData");
+        if (customModelData > 0) {
+            meta.setCustomModelData(customModelData);
+        }
+        
+        item.setItemMeta(meta);
+        return item;
+    }
+    
+    public void openKitEditorGui(Player player, String kitName) {
+        Kit kit = plugin.getKitManager().getKit(kitName);
+        if (kit == null) {
+            player.sendMessage("§cKit not found!");
+            return;
+        }
+        
+        String title = kitEditorConfig.getString("title", "§6Kit Rules").replace("{kit_name}", kitName);
+        int size = kitEditorConfig.getInt("size", 27);
+        
+        Inventory gui = Bukkit.createInventory(null, size, title);
+        
+        ConfigurationSection buttons = kitEditorConfig.getConfigurationSection("buttons");
+        if (buttons != null) {
+            for (String buttonKey : buttons.getKeys(false)) {
+                ConfigurationSection buttonConfig = buttons.getConfigurationSection(buttonKey);
+                if (buttonKey.equals("edit_icon")) {
+                    ItemStack item = createIconEditButton(buttonConfig, kit);
+                    gui.setItem(buttonConfig.getInt("slot"), item);
+                } else if (buttonKey.equals("add_to_gui")) {
+                    ItemStack item = createAddToGuiButton(buttonConfig, kit);
+                    gui.setItem(buttonConfig.getInt("slot"), item);
+                } else if (buttonKey.equals("edit_slots")) {
+                    ItemStack item = createEditSlotsButton(buttonConfig, kit);
+                    gui.setItem(buttonConfig.getInt("slot"), item);
+                } else {
+                    ItemStack item = createRuleButton(buttonConfig, buttonKey, kit.getRules());
+                    gui.setItem(buttonConfig.getInt("slot"), item);
+                }
+            }
+        }
+        
+        player.openInventory(gui);
+    }
+    
+    private ItemStack createRuleButton(ConfigurationSection config, String ruleKey, KitRules rules) {
+        boolean enabled = getRuleValue(ruleKey, rules);
+        
+        String materialKey = enabled ? "material_enabled" : "material_disabled";
+        String nameKey = enabled ? "name_enabled" : "name_disabled";
+        String loreKey = enabled ? "lore_enabled" : "lore_disabled";
+        
+        Material material = Material.valueOf(config.getString(materialKey));
+        ItemStack item = new ItemStack(material);
+        ItemMeta meta = item.getItemMeta();
+        
+        meta.setDisplayName(config.getString(nameKey));
+        meta.setLore(config.getStringList(loreKey));
+        
+        int customModelData = config.getInt("customModelData");
+        if (customModelData > 0) {
+            meta.setCustomModelData(customModelData);
+        }
         
         item.setItemMeta(meta);
         return item;
     }
 
-    public void openKitEditor(Player player, String kitName) {
-        Kit kit = kitManager.getKit(kitName);
-        if (kit == null) {
-            player.sendMessage(HexUtils.colorize("&cKit not found!"));
-            return;
-        }
-
-        editingKit.put(player.getUniqueId(), kitName);
-
-        File configFile = new File(plugin.getDataFolder(), "gui/kit_editor.yml");
-        if (!configFile.exists()) {
-            createDefaultConfig(configFile);
-        }
-
-        YamlConfiguration config = YamlConfiguration.loadConfiguration(configFile);
+    private ItemStack createIconEditButton(ConfigurationSection config, Kit kit) {
+        Material material = Material.valueOf(config.getString("material"));
+        ItemStack item = new ItemStack(material);
+        ItemMeta meta = item.getItemMeta();
         
-        String title = HexUtils.colorize(config.getString("title", "&6Kit Editor").replace("{kit}", kitName));
-        int size = config.getInt("size", 27);
+        meta.setDisplayName(config.getString("name"));
         
-        Inventory gui = Bukkit.createInventory(null, size, title);
-
-        // Load items from config
-        ConfigurationSection itemsSection = config.getConfigurationSection("items");
-        if (itemsSection != null) {
-            for (String key : itemsSection.getKeys(false)) {
-                ConfigurationSection itemSection = itemsSection.getConfigurationSection(key);
-                ItemStack item = createItemFromConfig(itemSection, kit);
-                if (item != null) {
-                    int slot = itemSection.getInt("slot", 0);
-                    gui.setItem(slot, item);
-                }
-            }
+        List<String> lore = new ArrayList<>(config.getStringList("lore"));
+        lore.add("§7Current icon: §f" + (kit.getIcon() != null ? kit.getIcon().getType().toString() : "None"));
+        meta.setLore(lore);
+        
+        int customModelData = config.getInt("customModelData");
+        if (customModelData > 0) {
+            meta.setCustomModelData(customModelData);
         }
+        
+        item.setItemMeta(meta);
+        return item;
+    }
 
+    private ItemStack createAddToGuiButton(ConfigurationSection config, Kit kit) {
+        Material material = Material.valueOf(config.getString("material"));
+        ItemStack item = new ItemStack(material);
+        ItemMeta meta = item.getItemMeta();
+        
+        meta.setDisplayName(config.getString("name"));
+        List<String> lore = new ArrayList<>(config.getStringList("lore"));
+        lore.add("§a§lLeft Click: §7Add to GUI");
+        lore.add("§c§lRight Click: §7Remove from GUI");
+        meta.setLore(lore);
+        
+        int customModelData = config.getInt("customModelData");
+        if (customModelData > 0) {
+            meta.setCustomModelData(customModelData);
+        }
+        
+        item.setItemMeta(meta);
+        return item;
+    }
+
+    private ItemStack createEditSlotsButton(ConfigurationSection config, Kit kit) {
+        Material material = Material.valueOf(config.getString("material"));
+        ItemStack item = new ItemStack(material);
+        ItemMeta meta = item.getItemMeta();
+        
+        meta.setDisplayName(config.getString("name"));
+        
+        List<String> lore = new ArrayList<>(config.getStringList("lore"));
+        // Add current slot information
+        lore.add("§7");
+        lore.add("§eCurrent Slots:");
+        lore.add("§7Split: §f" + plugin.getConfigManager().getKitSlotInGui(kit, "split"));
+        lore.add("§7FFA: §f" + plugin.getConfigManager().getKitSlotInGui(kit, "ffa"));
+        lore.add("§71v1: §f" + plugin.getConfigManager().getKitSlotInQueueGui(kit, "1v1"));
+        lore.add("§72v2: §f" + plugin.getConfigManager().getKitSlotInQueueGui(kit, "2v2"));
+        lore.add("§73v3: §f" + plugin.getConfigManager().getKitSlotInQueueGui(kit, "3v3"));
+        meta.setLore(lore);
+        
+        int customModelData = config.getInt("customModelData");
+        if (customModelData > 0) {
+            meta.setCustomModelData(customModelData);
+        }
+        
+        item.setItemMeta(meta);
+        return item;
+    }
+    
+    private boolean getRuleValue(String ruleKey, KitRules rules) {
+        switch (ruleKey) {
+            case "natural_health_regen":
+                return rules.isNaturalHealthRegen();
+            case "block_break":
+                return rules.isBlockBreak();
+            case "block_place":
+                return rules.isBlockPlace();
+            case "damage_multiplier":
+                return rules.getDamageMultiplier() > 1.0;
+            case "instant_tnt":
+                return rules.isInstantTnt();
+            default:
+                return false;
+        }
+    }
+    
+    private void toggleRule(String ruleKey, KitRules rules) {
+        switch (ruleKey) {
+            case "natural_health_regen":
+                rules.setNaturalHealthRegen(!rules.isNaturalHealthRegen());
+                break;
+            case "block_break":
+                rules.setBlockBreak(!rules.isBlockBreak());
+                break;
+            case "block_place":
+                rules.setBlockPlace(!rules.isBlockPlace());
+                break;
+            case "damage_multiplier":
+                rules.setDamageMultiplier(rules.getDamageMultiplier() > 1.0 ? 1.0 : 1.33);
+                break;
+            case "instant_tnt":
+                rules.setInstantTnt(!rules.isInstantTnt());
+                break;
+        }
+    }
+
+    private void openAddToGuiMenu(Player player, Kit kit) {
+        Inventory gui = Bukkit.createInventory(null, 27, "§6Add " + kit.getName() + " to GUI");
+        
+        // Split GUI option
+        ItemStack splitItem = new ItemStack(Material.IRON_SWORD);
+        ItemMeta splitMeta = splitItem.getItemMeta();
+        splitMeta.setDisplayName("§aAdd to Split GUI");
+        splitMeta.setLore(Arrays.asList("§7Add this kit to party split matches"));
+        splitItem.setItemMeta(splitMeta);
+        gui.setItem(10, splitItem);
+        
+        // FFA GUI option
+        ItemStack ffaItem = new ItemStack(Material.DIAMOND_SWORD);
+        ItemMeta ffaMeta = ffaItem.getItemMeta();
+        ffaMeta.setDisplayName("§cAdd to FFA GUI");
+        ffaMeta.setLore(Arrays.asList("§7Add this kit to party FFA matches"));
+        ffaItem.setItemMeta(ffaMeta);
+        gui.setItem(12, ffaItem);
+        
+        // 1v1 Queue option
+        ItemStack queue1v1Item = new ItemStack(Material.GOLDEN_SWORD);
+        ItemMeta queue1v1Meta = queue1v1Item.getItemMeta();
+        queue1v1Meta.setDisplayName("§6Add to 1v1 Queue");
+        queue1v1Meta.setLore(Arrays.asList("§7Add this kit to 1v1 ranked queue"));
+        queue1v1Item.setItemMeta(queue1v1Meta);
+        gui.setItem(14, queue1v1Item);
+        
+        // 2v2 Queue option
+        ItemStack queue2v2Item = new ItemStack(Material.GOLDEN_AXE);
+        ItemMeta queue2v2Meta = queue2v2Item.getItemMeta();
+        queue2v2Meta.setDisplayName("§6Add to 2v2 Queue");
+        queue2v2Meta.setLore(Arrays.asList("§7Add this kit to 2v2 ranked queue"));
+        queue2v2Item.setItemMeta(queue2v2Meta);
+        gui.setItem(16, queue2v2Item);
+        
+        // 3v3 Queue option
+        ItemStack queue3v3Item = new ItemStack(Material.NETHERITE_SWORD);
+        ItemMeta queue3v3Meta = queue3v3Item.getItemMeta();
+        queue3v3Meta.setDisplayName("§6Add to 3v3 Queue");
+        queue3v3Meta.setLore(Arrays.asList("§7Add this kit to 3v3 ranked queue"));
+        queue3v3Item.setItemMeta(queue3v3Item);
+        gui.setItem(18, queue3v3Item);
+        
         player.openInventory(gui);
     }
 
-    private void createDefaultConfig(File configFile) {
-        YamlConfiguration config = new YamlConfiguration();
+    private void openRemoveFromGuiMenu(Player player, Kit kit) {
+        Inventory gui = Bukkit.createInventory(null, 27, "§cRemove " + kit.getName() + " from GUI");
         
-        config.set("title", "&6Kit Editor - {kit}");
-        config.set("size", 27);
+        // Split GUI option
+        ItemStack splitItem = new ItemStack(Material.IRON_SWORD);
+        ItemMeta splitMeta = splitItem.getItemMeta();
+        splitMeta.setDisplayName("§cRemove from Split GUI");
+        splitMeta.setLore(Arrays.asList("§7Remove this kit from party split matches"));
+        splitItem.setItemMeta(splitMeta);
+        gui.setItem(10, splitItem);
         
-        // Edit GUI Slots
-        config.set("items.edit_gui_slots.slot", 10);
-        config.set("items.edit_gui_slots.material", "CHEST");
-        config.set("items.edit_gui_slots.name", "&eEdit GUI Slots");
-        config.set("items.edit_gui_slots.lore", List.of(
-            "&7Click to edit kit positions in GUIs",
-            "&7",
-            "&eCurrent Positions:",
-            "&7Split: &f{split_slot}",
-            "&7FFA: &f{ffa_slot}",
-            "&71v1: &f{1v1_slot}",
-            "&72v2: &f{2v2_slot}",
-            "&73v3: &f{3v3_slot}"
-        ));
-        config.set("items.edit_gui_slots.action", "EDIT_GUI_SLOTS");
+        // FFA GUI option
+        ItemStack ffaItem = new ItemStack(Material.DIAMOND_SWORD);
+        ItemMeta ffaMeta = ffaItem.getItemMeta();
+        ffaMeta.setDisplayName("§cRemove from FFA GUI");
+        ffaMeta.setLore(Arrays.asList("§7Remove this kit from party FFA matches"));
+        ffaItem.setItemMeta(ffaMeta);
+        gui.setItem(12, ffaItem);
         
-        // Set Icon
-        config.set("items.set_icon.slot", 11);
-        config.set("items.set_icon.material", "ITEM_FRAME");
-        config.set("items.set_icon.name", "&bSet Icon");
-        config.set("items.set_icon.lore", List.of("&7Click to set kit icon", "&7Hold the item you want as icon"));
-        config.set("items.set_icon.action", "SET_ICON");
+        // 1v1 Queue option
+        ItemStack queue1v1Item = new ItemStack(Material.GOLDEN_SWORD);
+        ItemMeta queue1v1Meta = queue1v1Item.getItemMeta();
+        queue1v1Meta.setDisplayName("§cRemove from 1v1 Queue");
+        queue1v1Meta.setLore(Arrays.asList("§7Remove this kit from 1v1 ranked queue"));
+        queue1v1Item.setItemMeta(queue1v1Item);
+        gui.setItem(14, queue1v1Item);
         
-        // Save Kit
-        config.set("items.save_kit.slot", 15);
-        config.set("items.save_kit.material", "EMERALD");
-        config.set("items.save_kit.name", "&aSave Kit");
-        config.set("items.save_kit.lore", List.of("&7Click to save kit changes"));
-        config.set("items.save_kit.action", "SAVE_KIT");
+        // 2v2 Queue option
+        ItemStack queue2v2Item = new ItemStack(Material.GOLDEN_AXE);
+        ItemMeta queue2v2Meta = queue2v2Item.getItemMeta();
+        queue2v2Meta.setDisplayName("§cRemove from 2v2 Queue");
+        queue2v2Meta.setLore(Arrays.asList("§7Remove this kit from 2v2 ranked queue"));
+        queue2v2Item.setItemMeta(queue2v2Item);
+        gui.setItem(16, queue2v2Item);
         
-        try {
-            config.save(configFile);
-        } catch (Exception e) {
-            plugin.getLogger().severe("Failed to create kit_editor.yml: " + e.getMessage());
-        }
+        // 3v3 Queue option
+        ItemStack queue3v3Item = new ItemStack(Material.NETHERITE_SWORD);
+        ItemMeta queue3v3Meta = queue3v3Item.getItemMeta();
+        queue3v3Meta.setDisplayName("§cRemove from 3v3 Queue");
+        queue3v3Meta.setLore(Arrays.asList("§7Remove this kit from 3v3 ranked queue"));
+        queue3v3Item.setItemMeta(queue3v3Item);
+        gui.setItem(18, queue3v3Item);
+        
+        player.openInventory(gui);
     }
 
-    private ItemStack createItemFromConfig(ConfigurationSection section, Kit kit) {
+    private void openSlotEditorMenu(Player player, Kit kit) {
+        Inventory gui = Bukkit.createInventory(null, 27, "§6Edit Slots for " + kit.getName());
+        
+        // Split GUI slot editor
+        ItemStack splitItem = new ItemStack(Material.IRON_SWORD);
+        ItemMeta splitMeta = splitItem.getItemMeta();
+        splitMeta.setDisplayName("§aEdit Split GUI Slot");
+        List<String> splitLore = new ArrayList<>();
+        splitLore.add("§7Current slot: §f" + plugin.getConfigManager().getKitSlotInGui(kit, "split"));
+        splitLore.add("§7Click to change slot position");
+        splitLore.add("§eYou'll be asked to type the new slot number");
+        splitMeta.setLore(splitLore);
+        splitItem.setItemMeta(splitItem);
+        gui.setItem(10, splitItem);
+        
+        // FFA GUI slot editor
+        ItemStack ffaItem = new ItemStack(Material.DIAMOND_SWORD);
+        ItemMeta ffaMeta = ffaItem.getItemMeta();
+        ffaMeta.setDisplayName("§cEdit FFA GUI Slot");
+        List<String> ffaLore = new ArrayList<>();
+        ffaLore.add("§7Current slot: §f" + plugin.getConfigManager().getKitSlotInGui(kit, "ffa"));
+        ffaLore.add("§7Click to change slot position");
+        ffaLore.add("§eYou'll be asked to type the new slot number");
+        ffaMeta.setLore(ffaLore);
+        ffaItem.setItemMeta(ffaMeta);
+        gui.setItem(12, ffaItem);
+        
+        // Queue slots
+        String[] queueModes = {"1v1", "2v2", "3v3"};
+        Material[] queueMaterials = {Material.GOLDEN_SWORD, Material.GOLDEN_AXE, Material.NETHERITE_SWORD};
+        int[] queueSlots = {14, 16, 18};
+        
+        for (int i = 0; i < queueModes.length; i++) {
+            ItemStack queueItem = new ItemStack(queueMaterials[i]);
+            ItemMeta queueMeta = queueItem.getItemMeta();
+            queueMeta.setDisplayName("§6Edit " + queueModes[i].toUpperCase() + " Queue Slot");
+            List<String> queueLore = new ArrayList<>();
+            queueLore.add("§7Current slot: §f" + plugin.getConfigManager().getKitSlotInQueueGui(kit, queueModes[i]));
+            queueLore.add("§7Click to change slot position");
+            queueLore.add("§eYou'll be asked to type the new slot number");
+            queueMeta.setLore(queueLore);
+            queueItem.setItemMeta(queueItem);
+            gui.setItem(queueSlots[i], queueItem);
+        }
+        
+        player.openInventory(gui);
+    }
+
+    @EventHandler
+    public void onPlayerChat(AsyncPlayerChatEvent event) {
+        Player player = event.getPlayer();
+        SlotEditSession session = pendingSlotEdits.get(player.getUniqueId());
+        
+        if (session == null) return;
+        
+        event.setCancelled(true);
+        pendingSlotEdits.remove(player.getUniqueId());
+        
+        String message = event.getMessage().trim();
+        
+        // Handle cancel
+        if (message.equalsIgnoreCase("cancel")) {
+            player.sendMessage("§cSlot editing cancelled.");
+            // Reopen the slot editor menu
+            Bukkit.getScheduler().runTask(plugin, () -> {
+                Kit kit = plugin.getKitManager().getKit(session.kitName);
+                if (kit != null) {
+                    openSlotEditorMenu(player, kit);
+                }
+            });
+            return;
+        }
+        
+        // Parse slot number
+        int newSlot;
         try {
-            Material material = Material.valueOf(section.getString("material", "STONE"));
-            ItemStack item = new ItemStack(material);
-            ItemMeta meta = item.getItemMeta();
-            
-            if (meta != null) {
-                String name = section.getString("name", "");
-                name = replacePlaceholders(name, kit);
-                meta.setDisplayName(HexUtils.colorize(name));
-                
-                List<String> lore = section.getStringList("lore");
-                List<String> processedLore = new ArrayList<>();
-                for (String line : lore) {
-                    processedLore.add(HexUtils.colorize(replacePlaceholders(line, kit)));
-                }
-                meta.setLore(processedLore);
-                
-                if (section.contains("customModelData")) {
-                    meta.setCustomModelData(section.getInt("customModelData"));
-                }
-                
-                item.setItemMeta(meta);
+            newSlot = Integer.parseInt(message);
+            if (newSlot < 0 || newSlot > 26) {
+                player.sendMessage("§cInvalid slot! Must be between 0 and 26. Type 'cancel' to cancel.");
+                pendingSlotEdits.put(player.getUniqueId(), session);
+                return;
+            }
+        } catch (NumberFormatException e) {
+            player.sendMessage("§cInvalid number! Please enter a number between 0-26, or 'cancel' to cancel.");
+            pendingSlotEdits.put(player.getUniqueId(), session);
+            return;
+        }
+        
+        // Update the slot
+        Bukkit.getScheduler().runTask(plugin, () -> {
+            Kit kit = plugin.getKitManager().getKit(session.kitName);
+            if (kit == null) {
+                player.sendMessage("§cKit not found!");
+                return;
             }
             
-            return item;
-        } catch (Exception e) {
-            plugin.getLogger().warning("Failed to create item from config: " + e.getMessage());
-            return null;
-        }
+            boolean success = plugin.getConfigManager().updateKitSlot(kit, session.guiType, newSlot);
+            if (success) {
+                player.sendMessage("§aUpdated " + session.guiType.toUpperCase() + " GUI slot to " + newSlot + " for kit: " + session.kitName);
+                plugin.getGuiManager().reloadGuiConfigs();
+                
+                // Reopen the slot editor menu
+                openSlotEditorMenu(player, kit);
+            } else {
+                player.sendMessage("§cFailed to update slot! Slot might be taken or kit not in that GUI.");
+                openSlotEditorMenu(player, kit);
+            }
+        });
     }
-
-    private String replacePlaceholders(String text, Kit kit) {
-        text = text.replace("{kit}", kit.getName());
-        text = text.replace("{split_slot}", getSlotText(kit.getName(), "split"));
-        text = text.replace("{ffa_slot}", getSlotText(kit.getName(), "ffa"));
-        text = text.replace("{1v1_slot}", getSlotText(kit.getName(), "1v1"));
-        text = text.replace("{2v2_slot}", getSlotText(kit.getName(), "2v2"));
-        text = text.replace("{3v3_slot}", getSlotText(kit.getName(), "3v3"));
-        return text;
-    }
-
-    private String getSlotText(String kitName, String guiType) {
-        Integer slot = configManager.getKitSlotInGui(kitName, guiType);
-        return slot != null ? String.valueOf(slot) : "Not in GUI";
-    }
-
+    
     @EventHandler
     public void onInventoryClick(InventoryClickEvent event) {
         if (!(event.getWhoClicked() instanceof Player)) return;
@@ -214,7 +498,7 @@ public class KitEditorGui implements Listener {
         Player player = (Player) event.getWhoClicked();
         String title = event.getView().getTitle();
         
-        if (title.contains("Kit Manager")) {
+        if (title.equals(kitListConfig.getString("title", "§6Kit Manager"))) {
             event.setCancelled(true);
             
             ItemStack clicked = event.getCurrentItem();
@@ -222,273 +506,212 @@ public class KitEditorGui implements Listener {
             
             String kitName = extractKitName(clicked);
             if (kitName != null) {
-                openKitEditor(player, kitName);
+                openKitEditorGui(player, kitName);
             }
-        } else if (title.contains("Kit Editor")) {
+        } else if (title.startsWith(kitEditorConfig.getString("title", "§6Kit Rules").split(" - ")[0])) {
             event.setCancelled(true);
             
-            ItemStack clickedItem = event.getCurrentItem();
-            if (clickedItem == null || !clickedItem.hasItemMeta()) return;
-            
-            String kitName = editingKit.get(player.getUniqueId());
+            String kitName = extractKitNameFromTitle(title);
             if (kitName == null) return;
             
-            Kit kit = kitManager.getKit(kitName);
+            Kit kit = plugin.getKitManager().getKit(kitName);
             if (kit == null) return;
             
-            String action = getActionFromItem(clickedItem);
-            if (action == null) return;
-            
-            handleAction(player, kit, action);
-        } else if (title.contains("Edit GUI Slots")) {
+            String ruleKey = identifyRuleButton(event.getSlot());
+            if (ruleKey != null) {
+                if (ruleKey.equals("edit_icon")) {
+                    // Set kit icon to player's main hand item
+                    ItemStack heldItem = player.getInventory().getItemInMainHand();
+                    if (heldItem != null && heldItem.getType() != Material.AIR) {
+                        ItemStack iconItem = heldItem.clone();
+                        iconItem.setAmount(1);
+                        kit.setIcon(iconItem);
+                        plugin.getKitManager().saveKit(kit);
+                        
+                        // Update icon in ALL GUI configs
+                        plugin.getConfigManager().updateKitIconInAllGuis(kit);
+                        
+                        // Refresh the GUI
+                        openKitEditorGui(player, kitName);
+                        
+                        player.sendMessage("§aKit icon updated to " + iconItem.getType().toString() + " for kit: " + kitName);
+                        player.sendMessage("§aIcon updated in all GUIs!");
+                    } else {
+                        player.sendMessage("§cHold an item in your main hand to set it as the kit icon!");
+                    }
+                    return;
+                }
+                if (ruleKey.equals("add_to_gui")) {
+                    if (event.getClick().isLeftClick()) {
+                        openAddToGuiMenu(player, kit);
+                    } else if (event.getClick().isRightClick()) {
+                        openRemoveFromGuiMenu(player, kit);
+                    }
+                    return;
+                }
+                if (ruleKey.equals("edit_slots")) {
+                    openSlotEditorMenu(player, kit);
+                    return;
+                }
+                toggleRule(ruleKey, kit.getRules());
+                plugin.getKitManager().saveKit(kit);
+                
+                // Refresh the GUI
+                openKitEditorGui(player, kitName);
+                
+                player.sendMessage("§aToggled " + ruleKey.replace("_", " ") + " for kit: " + kitName);
+            }
+        } else if (title.startsWith("§6Add ") && title.endsWith(" to GUI")) {
             event.setCancelled(true);
             
-            ItemStack clickedItem = event.getCurrentItem();
-            if (clickedItem == null || !clickedItem.hasItemMeta()) return;
+            String kitName = title.replace("§6Add ", "").replace(" to GUI", "");
+            Kit kit = plugin.getKitManager().getKit(kitName);
+            if (kit == null) return;
             
-            String kitName = editingKit.get(player.getUniqueId());
-            if (kitName == null) return;
+            ItemStack clicked = event.getCurrentItem();
+            if (clicked == null || clicked.getType() == Material.AIR) return;
             
-            String guiType = identifyGuiTypeFromSlotEditor(event.getSlot());
-            if (guiType != null) {
-                handleSlotEditorClick(player, kitName, guiType);
+            String guiType = "";
+            if (clicked.getType() == Material.IRON_SWORD) {
+                guiType = "split";
+            } else if (clicked.getType() == Material.DIAMOND_SWORD) {
+                guiType = "ffa";
+            } else if (clicked.getType() == Material.GOLDEN_SWORD) {
+                guiType = "1v1";
+            } else if (clicked.getType() == Material.GOLDEN_AXE) {
+                guiType = "2v2";
+            } else if (clicked.getType() == Material.NETHERITE_SWORD) {
+                guiType = "3v3";
+            }
+            
+            if (!guiType.isEmpty()) {
+                boolean success;
+                if (guiType.equals("split") || guiType.equals("ffa")) {
+                    success = plugin.getConfigManager().addKitToGuiConfig(kit, guiType, null);
+                } else {
+                    success = plugin.getConfigManager().addKitToQueueGuiConfig(kit, guiType, null);
+                }
+                
+                if (success) {
+                    player.sendMessage("§aKit '" + kitName + "' added to " + guiType.toUpperCase() + " GUI!");
+                    plugin.getGuiManager().reloadGuiConfigs();
+                } else {
+                    player.sendMessage("§cFailed to add kit to " + guiType.toUpperCase() + " GUI. It might already be there.");
+                }
+                
+                player.closeInventory();
+            }
+        } else if (title.startsWith("§cRemove ") && title.endsWith(" from GUI")) {
+            event.setCancelled(true);
+            
+            String kitName = title.replace("§cRemove ", "").replace(" from GUI", "");
+            Kit kit = plugin.getKitManager().getKit(kitName);
+            if (kit == null) return;
+            
+            ItemStack clicked = event.getCurrentItem();
+            if (clicked == null || clicked.getType() == Material.AIR) return;
+            
+            String guiType = "";
+            if (clicked.getType() == Material.IRON_SWORD) {
+                guiType = "split";
+            } else if (clicked.getType() == Material.DIAMOND_SWORD) {
+                guiType = "ffa";
+            } else if (clicked.getType() == Material.GOLDEN_SWORD) {
+                guiType = "1v1";
+            } else if (clicked.getType() == Material.GOLDEN_AXE) {
+                guiType = "2v2";
+            } else if (clicked.getType() == Material.NETHERITE_SWORD) {
+                guiType = "3v3";
+            }
+            
+            if (!guiType.isEmpty()) {
+                boolean success;
+                if (guiType.equals("split") || guiType.equals("ffa")) {
+                    success = plugin.getConfigManager().removeKitFromGuiConfig(kit, guiType);
+                } else {
+                    success = plugin.getConfigManager().removeKitFromQueueGuiConfig(kit, guiType);
+                }
+                
+                if (success) {
+                    player.sendMessage("§aKit '" + kitName + "' removed from " + guiType.toUpperCase() + " GUI!");
+                    plugin.getGuiManager().reloadGuiConfigs();
+                } else {
+                    player.sendMessage("§cFailed to remove kit from " + guiType.toUpperCase() + " GUI. It might not be there.");
+                }
+                
+                player.closeInventory();
+            }
+        } else if (title.startsWith("§6Edit Slots for ")) {
+            event.setCancelled(true);
+            
+            String kitName = title.replace("§6Edit Slots for ", "");
+            Kit kit = plugin.getKitManager().getKit(kitName);
+            if (kit == null) return;
+            
+            ItemStack clicked = event.getCurrentItem();
+            if (clicked == null || clicked.getType() == Material.AIR) return;
+            
+            // Handle GUI type selection for slot editing
+            String guiType = "";
+            if (clicked.getType() == Material.IRON_SWORD) {
+                guiType = "split";
+            } else if (clicked.getType() == Material.DIAMOND_SWORD) {
+                guiType = "ffa";
+            } else if (clicked.getType() == Material.GOLDEN_SWORD) {
+                guiType = "1v1";
+            } else if (clicked.getType() == Material.GOLDEN_AXE) {
+                guiType = "2v2";
+            } else if (clicked.getType() == Material.NETHERITE_SWORD) {
+                guiType = "3v3";
+            }
+            
+            if (!guiType.isEmpty()) {
+                // Start chat input session
+                pendingSlotEdits.put(player.getUniqueId(), new SlotEditSession(kitName, guiType));
+                player.closeInventory();
+                
+                player.sendMessage("§6§l▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
+                player.sendMessage("§e§lSLOT EDITOR");
+                player.sendMessage("§7Kit: §f" + kitName);
+                player.sendMessage("§7GUI: §f" + guiType.toUpperCase());
+                player.sendMessage("§7Current slot: §f" + plugin.getConfigManager().getKitSlotInGui(kit, guiType));
+                player.sendMessage("");
+                player.sendMessage("§aPlease type the new slot number (0-26):");
+                player.sendMessage("§7Or type §c'cancel' §7to cancel");
+                player.sendMessage("§6§l▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
             }
         }
     }
-
+    
     private String extractKitName(ItemStack item) {
         if (item.hasItemMeta() && item.getItemMeta().hasDisplayName()) {
             String displayName = item.getItemMeta().getDisplayName();
-            return HexUtils.stripColor(displayName);
-        }
-        return null;
-    }
-
-    private String getActionFromItem(ItemStack item) {
-        File configFile = new File(plugin.getDataFolder(), "gui/kit_editor.yml");
-        if (!configFile.exists()) return null;
-        
-        YamlConfiguration config = YamlConfiguration.loadConfiguration(configFile);
-        ConfigurationSection itemsSection = config.getConfigurationSection("items");
-        
-        if (itemsSection != null) {
-            for (String key : itemsSection.getKeys(false)) {
-                ConfigurationSection itemSection = itemsSection.getConfigurationSection(key);
-                if (itemSection.getString("material", "").equals(item.getType().name())) {
-                    String displayName = HexUtils.colorize(itemSection.getString("name", ""));
-                    if (item.getItemMeta().getDisplayName().contains(displayName.replace("&", "§"))) {
-                        return itemSection.getString("action");
-                    }
+            for (Kit kit : plugin.getKitManager().getKits().values()) {
+                if (displayName.contains(kit.getName())) {
+                    return kit.getName();
                 }
             }
         }
-        
         return null;
     }
-
-    private void handleAction(Player player, Kit kit, String action) {
-        switch (action) {
-            case "EDIT_GUI_SLOTS":
-                openSlotEditor(player, kit);
-                break;
-                
-            case "SET_ICON":
-                ItemStack heldItem = player.getInventory().getItemInMainHand();
-                if (heldItem.getType() == Material.AIR) {
-                    player.sendMessage(HexUtils.colorize("&cHold an item to set as icon!"));
-                    return;
+    
+    private String extractKitNameFromTitle(String title) {
+        String prefix = kitEditorConfig.getString("title", "§6Kit Rules").split(" - ")[0];
+        if (title.startsWith(prefix + " - ")) {
+            return title.substring((prefix + " - ").length());
+        }
+        return null;
+    }
+    
+    private String identifyRuleButton(int slot) {
+        ConfigurationSection buttons = kitEditorConfig.getConfigurationSection("buttons");
+        if (buttons != null) {
+            for (String buttonKey : buttons.getKeys(false)) {
+                if (buttons.getConfigurationSection(buttonKey).getInt("slot") == slot) {
+                    return buttonKey;
                 }
-                
-                kit.setIcon(heldItem.clone());
-                kitManager.saveKit(kit);
-                configManager.updateKitIconInAllGuis(kit);
-                player.sendMessage(HexUtils.colorize("&aKit icon updated!"));
-                reopenGui(player, kit.getName());
-                break;
-                
-            case "SAVE_KIT":
-                kitManager.saveKit(kit);
-                player.sendMessage(HexUtils.colorize("&aKit saved successfully!"));
-                break;
-        }
-    }
-
-    private void openSlotEditor(Player player, Kit kit) {
-        player.closeInventory();
-        
-        Inventory slotGui = Bukkit.createInventory(null, 27, HexUtils.colorize("&6Edit GUI Slots - " + kit.getName()));
-        
-        // Split GUI
-        ItemStack splitItem = new ItemStack(Material.ORANGE_WOOL);
-        ItemMeta splitMeta = splitItem.getItemMeta();
-        splitMeta.setDisplayName(HexUtils.colorize("&6Split GUI"));
-        splitMeta.setLore(List.of(
-            HexUtils.colorize("&7Click to edit slot in Split GUI"),
-            HexUtils.colorize("&7Current slot: &f" + getSlotText(kit.getName(), "split"))
-        ));
-        splitItem.setItemMeta(splitMeta);
-        slotGui.setItem(10, splitItem);
-        
-        // FFA GUI
-        ItemStack ffaItem = new ItemStack(Material.RED_WOOL);
-        ItemMeta ffaMeta = ffaItem.getItemMeta();
-        ffaMeta.setDisplayName(HexUtils.colorize("&cFFA GUI"));
-        ffaMeta.setLore(List.of(
-            HexUtils.colorize("&7Click to edit slot in FFA GUI"),
-            HexUtils.colorize("&7Current slot: &f" + getSlotText(kit.getName(), "ffa"))
-        ));
-        ffaItem.setItemMeta(ffaMeta);
-        slotGui.setItem(11, ffaItem);
-        
-        // 1v1 Queue
-        ItemStack oneVoneItem = new ItemStack(Material.BLUE_WOOL);
-        ItemMeta oneVoneMeta = oneVoneItem.getItemMeta();
-        oneVoneMeta.setDisplayName(HexUtils.colorize("&91v1 Queue"));
-        oneVoneMeta.setLore(List.of(
-            HexUtils.colorize("&7Click to edit slot in 1v1 Queue"),
-            HexUtils.colorize("&7Current slot: &f" + getSlotText(kit.getName(), "1v1"))
-        ));
-        oneVoneItem.setItemMeta(oneVoneMeta);
-        slotGui.setItem(12, oneVoneItem);
-        
-        // 2v2 Queue
-        ItemStack twoVtwoItem = new ItemStack(Material.GREEN_WOOL);
-        ItemMeta twoVtwoMeta = twoVtwoItem.getItemMeta();
-        twoVtwoMeta.setDisplayName(HexUtils.colorize("&a2v2 Queue"));
-        twoVtwoMeta.setLore(List.of(
-            HexUtils.colorize("&7Click to edit slot in 2v2 Queue"),
-            HexUtils.colorize("&7Current slot: &f" + getSlotText(kit.getName(), "2v2"))
-        ));
-        twoVtwoItem.setItemMeta(twoVtwoMeta);
-        slotGui.setItem(13, twoVtwoItem);
-        
-        // 3v3 Queue
-        ItemStack threeVthreeItem = new ItemStack(Material.PURPLE_WOOL);
-        ItemMeta threeVthreeMeta = threeVthreeItem.getItemMeta();
-        threeVthreeMeta.setDisplayName(HexUtils.colorize("&53v3 Queue"));
-        threeVthreeMeta.setLore(List.of(
-            HexUtils.colorize("&7Click to edit slot in 3v3 Queue"),
-            HexUtils.colorize("&7Current slot: &f" + getSlotText(kit.getName(), "3v3"))
-        ));
-        threeVthreeItem.setItemMeta(threeVthreeMeta);
-        slotGui.setItem(14, threeVthreeItem);
-        
-        player.openInventory(slotGui);
-    }
-
-    private String identifyGuiTypeFromSlotEditor(int slot) {
-        switch (slot) {
-            case 10: return "split";
-            case 11: return "ffa";
-            case 12: return "1v1";
-            case 13: return "2v2";
-            case 14: return "3v3";
-            default: return null;
-        }
-    }
-
-    private void handleSlotEditorClick(Player player, String kitName, String guiType) {
-        startSlotInput(player, kitName, guiType);
-    }
-
-    private void startSlotInput(Player player, String kitName, String guiType) {
-        player.closeInventory();
-        
-        waitingForSlotInput.put(player.getUniqueId(), kitName);
-        slotInputType.put(player.getUniqueId(), guiType);
-        inputTimeout.put(player.getUniqueId(), System.currentTimeMillis() + 30000);
-        
-        player.sendMessage("");
-        player.sendMessage(HexUtils.colorize("&8&l▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬"));
-        player.sendMessage(HexUtils.colorize("&6&lEDIT SLOT POSITION"));
-        player.sendMessage("");
-        player.sendMessage(HexUtils.colorize("&7Kit: &e" + kitName));
-        player.sendMessage(HexUtils.colorize("&7GUI Type: &e" + guiType.toUpperCase()));
-        player.sendMessage(HexUtils.colorize("&7Current slot: &f" + getSlotText(kitName, guiType)));
-        player.sendMessage("");
-        player.sendMessage(HexUtils.colorize("&eType the new slot number (0-26), or 'cancel' to cancel:"));
-        player.sendMessage(HexUtils.colorize("&8&l▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬"));
-        player.sendMessage("");
-    }
-
-    @EventHandler
-    public void onPlayerChat(AsyncPlayerChatEvent event) {
-        Player player = event.getPlayer();
-        UUID playerId = player.getUniqueId();
-        
-        if (!waitingForSlotInput.containsKey(playerId)) return;
-        
-        event.setCancelled(true);
-        
-        // Check timeout
-        if (System.currentTimeMillis() > inputTimeout.get(playerId)) {
-            waitingForSlotInput.remove(playerId);
-            slotInputType.remove(playerId);
-            inputTimeout.remove(playerId);
-            player.sendMessage(HexUtils.colorize("&cInput timed out!"));
-            return;
-        }
-        
-        String message = event.getMessage().trim();
-        String kitName = waitingForSlotInput.get(playerId);
-        String guiType = slotInputType.get(playerId);
-        
-        // Clean up
-        waitingForSlotInput.remove(playerId);
-        slotInputType.remove(playerId);
-        inputTimeout.remove(playerId);
-        
-        if (message.equalsIgnoreCase("cancel")) {
-            player.sendMessage(HexUtils.colorize("&cCancelled!"));
-            Bukkit.getScheduler().runTask(plugin, () -> reopenGui(player, kitName));
-            return;
-        }
-        
-        try {
-            int newSlot = Integer.parseInt(message);
-            
-            if (newSlot < 0 || newSlot > 26) {
-                player.sendMessage(HexUtils.colorize("&cSlot must be between 0 and 26!"));
-                Bukkit.getScheduler().runTask(plugin, () -> reopenGui(player, kitName));
-                return;
             }
-            
-            // Check if slot is already taken
-            String existingKit = configManager.getKitAtSlot(guiType, newSlot);
-            if (existingKit != null && !existingKit.equals(kitName)) {
-                player.sendMessage(HexUtils.colorize("&cSlot " + newSlot + " is already taken by kit: " + existingKit));
-                Bukkit.getScheduler().runTask(plugin, () -> reopenGui(player, kitName));
-                return;
-            }
-            
-            // Update slot
-            boolean success;
-            if (guiType.equals("1v1") || guiType.equals("2v2") || guiType.equals("3v3")) {
-                success = configManager.updateKitSlotInQueueGui(kitName, guiType, newSlot);
-            } else {
-                success = configManager.updateKitSlotInGui(kitName, guiType, newSlot);
-            }
-            
-            if (success) {
-                player.sendMessage(HexUtils.colorize("&aSlot updated to " + newSlot + " in " + guiType.toUpperCase() + " GUI!"));
-            } else {
-                player.sendMessage(HexUtils.colorize("&cFailed to update slot!"));
-            }
-            
-        } catch (NumberFormatException e) {
-            player.sendMessage(HexUtils.colorize("&cInvalid number! Please enter a valid slot number."));
         }
-        
-        Bukkit.getScheduler().runTask(plugin, () -> reopenGui(player, kitName));
-    }
-
-    public void reloadConfigs() {
-        // Reload configurations
-    }
-
-    private void reopenGui(Player player, String kitName) {
-        Bukkit.getScheduler().runTaskLater(plugin, () -> {
-            openKitEditor(player, kitName);
-        }, 1L);
+        return null;
     }
 }

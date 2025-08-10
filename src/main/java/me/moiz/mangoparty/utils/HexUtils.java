@@ -54,10 +54,6 @@ public class HexUtils {
         return message;
     }
     
-    public static String colorify(String message) {
-        return colorize(message);
-    }
-    
     private static String convertHexToLegacy(String message) {
         // Convert common hex colors to legacy equivalents
         message = message.replaceAll("&#FF0000", "&c"); // Red
