@@ -22,17 +22,6 @@ public class Arena {
         this.allowedKits = new ArrayList<>();
     }
 
-    public Arena(String name, Location center, Location spawn1, Location spawn2, Location corner1, Location corner2) {
-        this.name = name;
-        this.center = center;
-        this.spawn1 = spawn1;
-        this.spawn2 = spawn2;
-        this.corner1 = corner1;
-        this.corner2 = corner2;
-        this.regenerateBlocks = true;
-        this.allowedKits = new ArrayList<>();
-    }
-
     // Getters and setters
     public String getName() {
         return name;
@@ -109,11 +98,7 @@ public class Arena {
     }
 
     public boolean isKitAllowed(String kitName) {
-        // If no kits are specified, all kits are allowed
-        if (allowedKits.isEmpty()) {
-            return true;
-        }
-        return allowedKits.contains(kitName);
+        return allowedKits.isEmpty() || allowedKits.contains(kitName);
     }
 
     public boolean isComplete() {
@@ -122,47 +107,35 @@ public class Arena {
 
     public void saveToConfig(ConfigurationSection section) {
         if (center != null) {
-            section.set("center.world", center.getWorld().getName());
-            section.set("center.x", center.getX());
-            section.set("center.y", center.getY());
-            section.set("center.z", center.getZ());
-            section.set("center.yaw", center.getYaw());
-            section.set("center.pitch", center.getPitch());
+            ConfigurationSection centerSection = section.createSection("center");
+            saveLocationToConfig(centerSection, center);
         }
-
         if (spawn1 != null) {
-            section.set("spawn1.world", spawn1.getWorld().getName());
-            section.set("spawn1.x", spawn1.getX());
-            section.set("spawn1.y", spawn1.getY());
-            section.set("spawn1.z", spawn1.getZ());
-            section.set("spawn1.yaw", spawn1.getYaw());
-            section.set("spawn1.pitch", spawn1.getPitch());
+            ConfigurationSection spawn1Section = section.createSection("spawn1");
+            saveLocationToConfig(spawn1Section, spawn1);
         }
-
         if (spawn2 != null) {
-            section.set("spawn2.world", spawn2.getWorld().getName());
-            section.set("spawn2.x", spawn2.getX());
-            section.set("spawn2.y", spawn2.getY());
-            section.set("spawn2.z", spawn2.getZ());
-            section.set("spawn2.yaw", spawn2.getYaw());
-            section.set("spawn2.pitch", spawn2.getPitch());
+            ConfigurationSection spawn2Section = section.createSection("spawn2");
+            saveLocationToConfig(spawn2Section, spawn2);
         }
-
         if (corner1 != null) {
-            section.set("corner1.world", corner1.getWorld().getName());
-            section.set("corner1.x", corner1.getX());
-            section.set("corner1.y", corner1.getY());
-            section.set("corner1.z", corner1.getZ());
+            ConfigurationSection corner1Section = section.createSection("corner1");
+            saveLocationToConfig(corner1Section, corner1);
         }
-
         if (corner2 != null) {
-            section.set("corner2.world", corner2.getWorld().getName());
-            section.set("corner2.x", corner2.getX());
-            section.set("corner2.y", corner2.getY());
-            section.set("corner2.z", corner2.getZ());
+            ConfigurationSection corner2Section = section.createSection("corner2");
+            saveLocationToConfig(corner2Section, corner2);
         }
-
         section.set("regenerateBlocks", regenerateBlocks);
         section.set("allowedKits", allowedKits);
+    }
+
+    private void saveLocationToConfig(ConfigurationSection section, Location location) {
+        section.set("world", location.getWorld().getName());
+        section.set("x", location.getX());
+        section.set("y", location.getY());
+        section.set("z", location.getZ());
+        section.set("yaw", location.getYaw());
+        section.set("pitch", location.getPitch());
     }
 }

@@ -250,12 +250,8 @@ public class MangoCommand implements CommandExecutor {
             return;
         }
         
-        boolean success = plugin.getArenaManager().saveSchematic(arena);
-        if (success) {
-            player.sendMessage("§aSchematic saved for arena '" + arenaName + "'!");
-        } else {
-            player.sendMessage("§cFailed to save schematic for arena '" + arenaName + "'!");
-        }
+        plugin.getArenaManager().saveArenaSchematic(arena);
+        player.sendMessage("§aSchematic saved for arena '" + arenaName + "'!");
     }
     
     private void handleCreateKitCommand(Player player, String kitName) {

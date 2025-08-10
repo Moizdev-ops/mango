@@ -46,10 +46,44 @@ public class KitEditorGui implements Listener {
         plugin.getServer().getPluginManager().registerEvents(this, plugin);
     }
 
+    public void openKitListGui(Player player) {
+        String title = HexUtils.colorize("&6Kit Manager");
+        int size = 54;
+        
+        Inventory gui = Bukkit.createInventory(null, size, title);
+        
+        Map<String, Kit> kits = kitManager.getKits();
+        int slot = 0;
+        
+        for (Kit kit : kits.values()) {
+            if (slot >= size) break;
+            
+            ItemStack item = createKitItem(kit);
+            gui.setItem(slot, item);
+            slot++;
+        }
+        
+        player.openInventory(gui);
+    }
+
+    private ItemStack createKitItem(Kit kit) {
+        ItemStack item = new ItemStack(Material.CHEST);
+        ItemMeta meta = item.getItemMeta();
+        
+        meta.setDisplayName(HexUtils.colorize("&e" + kit.getName()));
+        
+        List<String> lore = new ArrayList<>();
+        lore.add(HexUtils.colorize("&7Click to edit"));
+        meta.setLore(lore);
+        
+        item.setItemMeta(meta);
+        return item;
+    }
+
     public void openKitEditor(Player player, String kitName) {
         Kit kit = kitManager.getKit(kitName);
         if (kit == null) {
-            player.sendMessage(HexUtils.colorify("&cKit not found!"));
+            player.sendMessage(HexUtils.colorize("&cKit not found!"));
             return;
         }
 
@@ -62,7 +96,7 @@ public class KitEditorGui implements Listener {
 
         YamlConfiguration config = YamlConfiguration.loadConfiguration(configFile);
         
-        String title = HexUtils.colorify(config.getString("title", "&6Kit Editor").replace("{kit}", kitName));
+        String title = HexUtils.colorize(config.getString("title", "&6Kit Editor").replace("{kit}", kitName));
         int size = config.getInt("size", 27);
         
         Inventory gui = Bukkit.createInventory(null, size, title);
@@ -135,12 +169,12 @@ public class KitEditorGui implements Listener {
             if (meta != null) {
                 String name = section.getString("name", "");
                 name = replacePlaceholders(name, kit);
-                meta.setDisplayName(HexUtils.colorify(name));
+                meta.setDisplayName(HexUtils.colorize(name));
                 
                 List<String> lore = section.getStringList("lore");
                 List<String> processedLore = new ArrayList<>();
                 for (String line : lore) {
-                    processedLore.add(HexUtils.colorify(replacePlaceholders(line, kit)));
+                    processedLore.add(HexUtils.colorize(replacePlaceholders(line, kit)));
                 }
                 meta.setLore(processedLore);
                 
@@ -180,23 +214,54 @@ public class KitEditorGui implements Listener {
         Player player = (Player) event.getWhoClicked();
         String title = event.getView().getTitle();
         
-        if (!title.contains("Kit Editor")) return;
-        
-        event.setCancelled(true);
-        
-        ItemStack clickedItem = event.getCurrentItem();
-        if (clickedItem == null || !clickedItem.hasItemMeta()) return;
-        
-        String kitName = editingKit.get(player.getUniqueId());
-        if (kitName == null) return;
-        
-        Kit kit = kitManager.getKit(kitName);
-        if (kit == null) return;
-        
-        String action = getActionFromItem(clickedItem);
-        if (action == null) return;
-        
-        handleAction(player, kit, action);
+        if (title.contains("Kit Manager")) {
+            event.setCancelled(true);
+            
+            ItemStack clicked = event.getCurrentItem();
+            if (clicked == null || clicked.getType() == Material.AIR) return;
+            
+            String kitName = extractKitName(clicked);
+            if (kitName != null) {
+                openKitEditor(player, kitName);
+            }
+        } else if (title.contains("Kit Editor")) {
+            event.setCancelled(true);
+            
+            ItemStack clickedItem = event.getCurrentItem();
+            if (clickedItem == null || !clickedItem.hasItemMeta()) return;
+            
+            String kitName = editingKit.get(player.getUniqueId());
+            if (kitName == null) return;
+            
+            Kit kit = kitManager.getKit(kitName);
+            if (kit == null) return;
+            
+            String action = getActionFromItem(clickedItem);
+            if (action == null) return;
+            
+            handleAction(player, kit, action);
+        } else if (title.contains("Edit GUI Slots")) {
+            event.setCancelled(true);
+            
+            ItemStack clickedItem = event.getCurrentItem();
+            if (clickedItem == null || !clickedItem.hasItemMeta()) return;
+            
+            String kitName = editingKit.get(player.getUniqueId());
+            if (kitName == null) return;
+            
+            String guiType = identifyGuiTypeFromSlotEditor(event.getSlot());
+            if (guiType != null) {
+                handleSlotEditorClick(player, kitName, guiType);
+            }
+        }
+    }
+
+    private String extractKitName(ItemStack item) {
+        if (item.hasItemMeta() && item.getItemMeta().hasDisplayName()) {
+            String displayName = item.getItemMeta().getDisplayName();
+            return HexUtils.stripColor(displayName);
+        }
+        return null;
     }
 
     private String getActionFromItem(ItemStack item) {
@@ -210,7 +275,7 @@ public class KitEditorGui implements Listener {
             for (String key : itemsSection.getKeys(false)) {
                 ConfigurationSection itemSection = itemsSection.getConfigurationSection(key);
                 if (itemSection.getString("material", "").equals(item.getType().name())) {
-                    String displayName = HexUtils.colorify(itemSection.getString("name", ""));
+                    String displayName = HexUtils.colorize(itemSection.getString("name", ""));
                     if (item.getItemMeta().getDisplayName().contains(displayName.replace("&", "§"))) {
                         return itemSection.getString("action");
                     }
@@ -230,20 +295,20 @@ public class KitEditorGui implements Listener {
             case "SET_ICON":
                 ItemStack heldItem = player.getInventory().getItemInMainHand();
                 if (heldItem.getType() == Material.AIR) {
-                    player.sendMessage(HexUtils.colorify("&cHold an item to set as icon!"));
+                    player.sendMessage(HexUtils.colorize("&cHold an item to set as icon!"));
                     return;
                 }
                 
                 kit.setIcon(heldItem.clone());
                 kitManager.saveKit(kit);
                 configManager.updateKitIconInAllGuis(kit);
-                player.sendMessage(HexUtils.colorify("&aKit icon updated!"));
+                player.sendMessage(HexUtils.colorize("&aKit icon updated!"));
                 reopenGui(player, kit.getName());
                 break;
                 
             case "SAVE_KIT":
                 kitManager.saveKit(kit);
-                player.sendMessage(HexUtils.colorify("&aKit saved successfully!"));
+                player.sendMessage(HexUtils.colorize("&aKit saved successfully!"));
                 break;
         }
     }
@@ -251,15 +316,15 @@ public class KitEditorGui implements Listener {
     private void openSlotEditor(Player player, Kit kit) {
         player.closeInventory();
         
-        Inventory slotGui = Bukkit.createInventory(null, 27, HexUtils.colorify("&6Edit GUI Slots - " + kit.getName()));
+        Inventory slotGui = Bukkit.createInventory(null, 27, HexUtils.colorize("&6Edit GUI Slots - " + kit.getName()));
         
         // Split GUI
         ItemStack splitItem = new ItemStack(Material.ORANGE_WOOL);
         ItemMeta splitMeta = splitItem.getItemMeta();
-        splitMeta.setDisplayName(HexUtils.colorify("&6Split GUI"));
+        splitMeta.setDisplayName(HexUtils.colorize("&6Split GUI"));
         splitMeta.setLore(List.of(
-            HexUtils.colorify("&7Click to edit slot in Split GUI"),
-            HexUtils.colorify("&7Current slot: &f" + getSlotText(kit.getName(), "split"))
+            HexUtils.colorize("&7Click to edit slot in Split GUI"),
+            HexUtils.colorize("&7Current slot: &f" + getSlotText(kit.getName(), "split"))
         ));
         splitItem.setItemMeta(splitMeta);
         slotGui.setItem(10, splitItem);
@@ -267,10 +332,10 @@ public class KitEditorGui implements Listener {
         // FFA GUI
         ItemStack ffaItem = new ItemStack(Material.RED_WOOL);
         ItemMeta ffaMeta = ffaItem.getItemMeta();
-        ffaMeta.setDisplayName(HexUtils.colorify("&cFFA GUI"));
+        ffaMeta.setDisplayName(HexUtils.colorize("&cFFA GUI"));
         ffaMeta.setLore(List.of(
-            HexUtils.colorify("&7Click to edit slot in FFA GUI"),
-            HexUtils.colorify("&7Current slot: &f" + getSlotText(kit.getName(), "ffa"))
+            HexUtils.colorize("&7Click to edit slot in FFA GUI"),
+            HexUtils.colorize("&7Current slot: &f" + getSlotText(kit.getName(), "ffa"))
         ));
         ffaItem.setItemMeta(ffaMeta);
         slotGui.setItem(11, ffaItem);
@@ -278,10 +343,10 @@ public class KitEditorGui implements Listener {
         // 1v1 Queue
         ItemStack oneVoneItem = new ItemStack(Material.BLUE_WOOL);
         ItemMeta oneVoneMeta = oneVoneItem.getItemMeta();
-        oneVoneMeta.setDisplayName(HexUtils.colorify("&91v1 Queue"));
+        oneVoneMeta.setDisplayName(HexUtils.colorize("&91v1 Queue"));
         oneVoneMeta.setLore(List.of(
-            HexUtils.colorify("&7Click to edit slot in 1v1 Queue"),
-            HexUtils.colorify("&7Current slot: &f" + getSlotText(kit.getName(), "1v1"))
+            HexUtils.colorize("&7Click to edit slot in 1v1 Queue"),
+            HexUtils.colorize("&7Current slot: &f" + getSlotText(kit.getName(), "1v1"))
         ));
         oneVoneItem.setItemMeta(oneVoneMeta);
         slotGui.setItem(12, oneVoneItem);
@@ -289,10 +354,10 @@ public class KitEditorGui implements Listener {
         // 2v2 Queue
         ItemStack twoVtwoItem = new ItemStack(Material.GREEN_WOOL);
         ItemMeta twoVtwoMeta = twoVtwoItem.getItemMeta();
-        twoVtwoMeta.setDisplayName(HexUtils.colorify("&a2v2 Queue"));
+        twoVtwoMeta.setDisplayName(HexUtils.colorize("&a2v2 Queue"));
         twoVtwoMeta.setLore(List.of(
-            HexUtils.colorify("&7Click to edit slot in 2v2 Queue"),
-            HexUtils.colorify("&7Current slot: &f" + getSlotText(kit.getName(), "2v2"))
+            HexUtils.colorize("&7Click to edit slot in 2v2 Queue"),
+            HexUtils.colorize("&7Current slot: &f" + getSlotText(kit.getName(), "2v2"))
         ));
         twoVtwoItem.setItemMeta(twoVtwoMeta);
         slotGui.setItem(13, twoVtwoItem);
@@ -300,10 +365,10 @@ public class KitEditorGui implements Listener {
         // 3v3 Queue
         ItemStack threeVthreeItem = new ItemStack(Material.PURPLE_WOOL);
         ItemMeta threeVthreeMeta = threeVthreeItem.getItemMeta();
-        threeVthreeMeta.setDisplayName(HexUtils.colorify("&53v3 Queue"));
+        threeVthreeMeta.setDisplayName(HexUtils.colorize("&53v3 Queue"));
         threeVthreeMeta.setLore(List.of(
-            HexUtils.colorify("&7Click to edit slot in 3v3 Queue"),
-            HexUtils.colorify("&7Current slot: &f" + getSlotText(kit.getName(), "3v3"))
+            HexUtils.colorize("&7Click to edit slot in 3v3 Queue"),
+            HexUtils.colorize("&7Current slot: &f" + getSlotText(kit.getName(), "3v3"))
         ));
         threeVthreeItem.setItemMeta(threeVthreeMeta);
         slotGui.setItem(14, threeVthreeItem);
@@ -311,35 +376,19 @@ public class KitEditorGui implements Listener {
         player.openInventory(slotGui);
     }
 
-    @EventHandler
-    public void onSlotEditorClick(InventoryClickEvent event) {
-        if (!(event.getWhoClicked() instanceof Player)) return;
-        
-        Player player = (Player) event.getWhoClicked();
-        String title = event.getView().getTitle();
-        
-        if (!title.contains("Edit GUI Slots")) return;
-        
-        event.setCancelled(true);
-        
-        ItemStack clickedItem = event.getCurrentItem();
-        if (clickedItem == null || !clickedItem.hasItemMeta()) return;
-        
-        String kitName = editingKit.get(player.getUniqueId());
-        if (kitName == null) return;
-        
-        String guiType = null;
-        String displayName = clickedItem.getItemMeta().getDisplayName();
-        
-        if (displayName.contains("Split")) guiType = "split";
-        else if (displayName.contains("FFA")) guiType = "ffa";
-        else if (displayName.contains("1v1")) guiType = "1v1";
-        else if (displayName.contains("2v2")) guiType = "2v2";
-        else if (displayName.contains("3v3")) guiType = "3v3";
-        
-        if (guiType != null) {
-            startSlotInput(player, kitName, guiType);
+    private String identifyGuiTypeFromSlotEditor(int slot) {
+        switch (slot) {
+            case 10: return "split";
+            case 11: return "ffa";
+            case 12: return "1v1";
+            case 13: return "2v2";
+            case 14: return "3v3";
+            default: return null;
         }
+    }
+
+    private void handleSlotEditorClick(Player player, String kitName, String guiType) {
+        startSlotInput(player, kitName, guiType);
     }
 
     private void startSlotInput(Player player, String kitName, String guiType) {
@@ -350,15 +399,15 @@ public class KitEditorGui implements Listener {
         inputTimeout.put(player.getUniqueId(), System.currentTimeMillis() + 30000);
         
         player.sendMessage("");
-        player.sendMessage(HexUtils.colorify("&8&l▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬"));
-        player.sendMessage(HexUtils.colorify("&6&lEDIT SLOT POSITION"));
+        player.sendMessage(HexUtils.colorize("&8&l▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬"));
+        player.sendMessage(HexUtils.colorize("&6&lEDIT SLOT POSITION"));
         player.sendMessage("");
-        player.sendMessage(HexUtils.colorify("&7Kit: &e" + kitName));
-        player.sendMessage(HexUtils.colorify("&7GUI Type: &e" + guiType.toUpperCase()));
-        player.sendMessage(HexUtils.colorify("&7Current slot: &f" + getSlotText(kitName, guiType)));
+        player.sendMessage(HexUtils.colorize("&7Kit: &e" + kitName));
+        player.sendMessage(HexUtils.colorize("&7GUI Type: &e" + guiType.toUpperCase()));
+        player.sendMessage(HexUtils.colorize("&7Current slot: &f" + getSlotText(kitName, guiType)));
         player.sendMessage("");
-        player.sendMessage(HexUtils.colorify("&eType the new slot number (0-26), or 'cancel' to cancel:"));
-        player.sendMessage(HexUtils.colorify("&8&l▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬"));
+        player.sendMessage(HexUtils.colorize("&eType the new slot number (0-26), or 'cancel' to cancel:"));
+        player.sendMessage(HexUtils.colorize("&8&l▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬"));
         player.sendMessage("");
     }
 
@@ -376,7 +425,7 @@ public class KitEditorGui implements Listener {
             waitingForSlotInput.remove(playerId);
             slotInputType.remove(playerId);
             inputTimeout.remove(playerId);
-            player.sendMessage(HexUtils.colorify("&cInput timed out!"));
+            player.sendMessage(HexUtils.colorize("&cInput timed out!"));
             return;
         }
         
@@ -390,7 +439,7 @@ public class KitEditorGui implements Listener {
         inputTimeout.remove(playerId);
         
         if (message.equalsIgnoreCase("cancel")) {
-            player.sendMessage(HexUtils.colorify("&cCancelled!"));
+            player.sendMessage(HexUtils.colorize("&cCancelled!"));
             Bukkit.getScheduler().runTask(plugin, () -> reopenGui(player, kitName));
             return;
         }
@@ -399,7 +448,7 @@ public class KitEditorGui implements Listener {
             int newSlot = Integer.parseInt(message);
             
             if (newSlot < 0 || newSlot > 26) {
-                player.sendMessage(HexUtils.colorify("&cSlot must be between 0 and 26!"));
+                player.sendMessage(HexUtils.colorize("&cSlot must be between 0 and 26!"));
                 Bukkit.getScheduler().runTask(plugin, () -> reopenGui(player, kitName));
                 return;
             }
@@ -407,7 +456,7 @@ public class KitEditorGui implements Listener {
             // Check if slot is already taken
             String existingKit = configManager.getKitAtSlot(guiType, newSlot);
             if (existingKit != null && !existingKit.equals(kitName)) {
-                player.sendMessage(HexUtils.colorify("&cSlot " + newSlot + " is already taken by kit: " + existingKit));
+                player.sendMessage(HexUtils.colorize("&cSlot " + newSlot + " is already taken by kit: " + existingKit));
                 Bukkit.getScheduler().runTask(plugin, () -> reopenGui(player, kitName));
                 return;
             }
@@ -421,16 +470,20 @@ public class KitEditorGui implements Listener {
             }
             
             if (success) {
-                player.sendMessage(HexUtils.colorify("&aSlot updated to " + newSlot + " in " + guiType.toUpperCase() + " GUI!"));
+                player.sendMessage(HexUtils.colorize("&aSlot updated to " + newSlot + " in " + guiType.toUpperCase() + " GUI!"));
             } else {
-                player.sendMessage(HexUtils.colorify("&cFailed to update slot!"));
+                player.sendMessage(HexUtils.colorize("&cFailed to update slot!"));
             }
             
         } catch (NumberFormatException e) {
-            player.sendMessage(HexUtils.colorify("&cInvalid number! Please enter a valid slot number."));
+            player.sendMessage(HexUtils.colorize("&cInvalid number! Please enter a valid slot number."));
         }
         
         Bukkit.getScheduler().runTask(plugin, () -> reopenGui(player, kitName));
+    }
+
+    public void reloadConfigs() {
+        // Reload configurations
     }
 
     private void reopenGui(Player player, String kitName) {

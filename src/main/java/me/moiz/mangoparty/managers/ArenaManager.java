@@ -29,16 +29,20 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class ArenaManager {
     private MangoParty plugin;
     private Map<String, Arena> arenas;
+    private Set<String> reservedArenas;
     private File arenasFile;
     private YamlConfiguration arenasConfig;
 
     public ArenaManager(MangoParty plugin) {
         this.plugin = plugin;
         this.arenas = new HashMap<>();
+        this.reservedArenas = ConcurrentHashMap.newKeySet();
         this.arenasFile = new File(plugin.getDataFolder(), "arenas.yml");
         loadArenas();
     }
@@ -161,6 +165,14 @@ public class ArenaManager {
         }
     }
 
+    public Arena createArena(String name, String worldName) {
+        Arena arena = new Arena(name);
+        arenas.put(name, arena);
+        saveArena(arena);
+        plugin.getLogger().info("Created new arena: " + name);
+        return arena;
+    }
+
     public void saveArena(Arena arena) {
         if (arenasConfig == null) {
             arenasConfig = new YamlConfiguration();
@@ -185,6 +197,7 @@ public class ArenaManager {
 
     public void deleteArena(String name) {
         arenas.remove(name);
+        reservedArenas.remove(name);
         
         if (arenasConfig != null) {
             ConfigurationSection arenasSection = arenasConfig.getConfigurationSection("arenas");
@@ -209,6 +222,27 @@ public class ArenaManager {
         return arenas.get(name);
     }
 
+    public Arena getAvailableArena() {
+        for (Arena arena : arenas.values()) {
+            if (arena.isComplete() && !reservedArenas.contains(arena.getName())) {
+                return arena;
+            }
+        }
+        return null;
+    }
+
+    public void reserveArena(String arenaName) {
+        reservedArenas.add(arenaName);
+    }
+
+    public void releaseArena(String arenaName) {
+        reservedArenas.remove(arenaName);
+    }
+
+    public boolean isArenaReserved(String arenaName) {
+        return reservedArenas.contains(arenaName);
+    }
+
     public List<Arena> getAllArenas() {
         return new ArrayList<>(arenas.values());
     }
@@ -217,8 +251,16 @@ public class ArenaManager {
         return new ArrayList<>(arenas.keySet());
     }
 
+    public Map<String, Arena> getArenas() {
+        return new HashMap<>(arenas);
+    }
+
     public boolean arenaExists(String name) {
         return arenas.containsKey(name);
+    }
+
+    public boolean saveSchematic(Arena arena) {
+        return saveArenaSchematic(arena);
     }
 
     public void saveArenaSchematic(Arena arena) {
@@ -276,6 +318,44 @@ public class ArenaManager {
             }
         } catch (Exception e) {
             plugin.getLogger().severe("Failed to save schematic for arena " + arena.getName() + ": " + e.getMessage());
+        }
+    }
+
+    public boolean pasteSchematic(Arena arena) {
+        try {
+            File schematicFile = new File(plugin.getDataFolder(), "schematics/" + arena.getName() + ".schem");
+            if (!schematicFile.exists()) {
+                plugin.getLogger().warning("Schematic file not found for arena: " + arena.getName());
+                return false;
+            }
+
+            // Paste schematic using WorldEdit
+            ClipboardFormat format = ClipboardFormats.findByFile(schematicFile);
+            try (ClipboardReader reader = format.getReader(new FileInputStream(schematicFile))) {
+                Clipboard clipboard = reader.read();
+                
+                com.sk89q.worldedit.world.World world = BukkitAdapter.adapt(arena.getCorner1().getWorld());
+                try (EditSession editSession = WorldEdit.getInstance().newEditSession(world)) {
+                    BlockVector3 pasteLocation = BlockVector3.at(
+                        Math.min(arena.getCorner1().getBlockX(), arena.getCorner2().getBlockX()),
+                        Math.min(arena.getCorner1().getBlockY(), arena.getCorner2().getBlockY()),
+                        Math.min(arena.getCorner1().getBlockZ(), arena.getCorner2().getBlockZ())
+                    );
+                    
+                    Operation operation = new ClipboardHolder(clipboard)
+                        .createPaste(editSession)
+                        .to(pasteLocation)
+                        .ignoreAirBlocks(false)
+                        .build();
+                    
+                    Operations.complete(operation);
+                }
+            }
+            
+            return true;
+        } catch (Exception e) {
+            plugin.getLogger().severe("Failed to paste schematic for arena " + arena.getName() + ": " + e.getMessage());
+            return false;
         }
     }
 
