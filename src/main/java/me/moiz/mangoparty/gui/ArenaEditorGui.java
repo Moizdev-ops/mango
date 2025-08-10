@@ -43,6 +43,40 @@ public class ArenaEditorGui implements Listener {
         plugin.getServer().getPluginManager().registerEvents(this, plugin);
     }
 
+    public void openArenaListGui(Player player) {
+        Inventory gui = Bukkit.createInventory(null, 54, HexUtils.colorize("&6Arena Manager"));
+
+        List<Arena> arenas = arenaManager.getAllArenas();
+        int slot = 0;
+        
+        for (Arena arena : arenas) {
+            if (slot >= 54) break;
+            
+            ItemStack item = new ItemStack(arena.isComplete() ? Material.LIME_CONCRETE : Material.RED_CONCRETE);
+            ItemMeta meta = item.getItemMeta();
+            meta.setDisplayName(HexUtils.colorize("&e" + arena.getName()));
+            
+            List<String> lore = new ArrayList<>();
+            lore.add(HexUtils.colorize("&7Status: " + (arena.isComplete() ? "&aComplete" : "&cIncomplete")));
+            
+            // Add coordinate info
+            if (arena.getCenter() != null) {
+                Location center = arena.getCenter();
+                lore.add(HexUtils.colorize("&7Center: &f" + df.format(center.getX()) + ", " + df.format(center.getY()) + ", " + df.format(center.getZ())));
+            }
+            
+            lore.add("");
+            lore.add(HexUtils.colorize("&eClick to edit"));
+            
+            meta.setLore(lore);
+            item.setItemMeta(meta);
+            gui.setItem(slot, item);
+            slot++;
+        }
+
+        player.openInventory(gui);
+    }
+
     public void openArenaEditor(Player player, String arenaName) {
         Arena arena = arenaManager.getArena(arenaName);
         if (arena == null) {
@@ -169,7 +203,7 @@ public class ArenaEditorGui implements Listener {
             dimensionsLore.add(HexUtils.colorize("&cDimensions: Unknown"));
         }
         
-        int completionPercentage = arena.getCompletionPercentage();
+        int completionPercentage = calculateCompletionPercentage(arena);
         dimensionsLore.add(HexUtils.colorize("&7Completion: " + completionPercentage + "%"));
         
         dimensionsMeta.setLore(dimensionsLore);
@@ -216,14 +250,14 @@ public class ArenaEditorGui implements Listener {
         kitsMeta.setDisplayName(HexUtils.colorize("&dManage Allowed Kits"));
         List<String> kitsLore = new ArrayList<>();
         List<String> allowedKits = arena.getAllowedKits();
-        int totalKits = kitManager.getAllKits().size();
+        int totalKits = kitManager.getKits().size();
         
         if (allowedKits.isEmpty()) {
             kitsLore.add(HexUtils.colorize("&aAll kits allowed (" + totalKits + " kits)"));
         } else {
             kitsLore.add(HexUtils.colorize("&7Allowed kits: " + allowedKits.size() + "/" + totalKits));
             for (String kitName : allowedKits) {
-                kitsLore.add(HexUtils.colorize("&8• " + kitName));
+                kitsLore.add(HexUtils.colorize("&8• &a" + kitName));
             }
         }
         kitsLore.add("");
@@ -254,12 +288,39 @@ public class ArenaEditorGui implements Listener {
         player.openInventory(gui);
     }
 
+    private int calculateCompletionPercentage(Arena arena) {
+        int total = 5; // center, spawn1, spawn2, corner1, corner2
+        int completed = 0;
+        
+        if (arena.getCenter() != null) completed++;
+        if (arena.getSpawn1() != null) completed++;
+        if (arena.getSpawn2() != null) completed++;
+        if (arena.getCorner1() != null) completed++;
+        if (arena.getCorner2() != null) completed++;
+        
+        return (completed * 100) / total;
+    }
+
     @EventHandler
     public void onInventoryClick(InventoryClickEvent event) {
         if (!(event.getWhoClicked() instanceof Player)) return;
         Player player = (Player) event.getWhoClicked();
         
-        if (!event.getView().getTitle().contains("Arena Editor:")) return;
+        String title = event.getView().getTitle();
+        
+        if (title.contains("Arena Manager")) {
+            event.setCancelled(true);
+            ItemStack clicked = event.getCurrentItem();
+            if (clicked == null || clicked.getType() == Material.AIR) return;
+            
+            if (clicked.hasItemMeta() && clicked.getItemMeta().hasDisplayName()) {
+                String arenaName = HexUtils.stripColor(clicked.getItemMeta().getDisplayName());
+                openArenaEditor(player, arenaName);
+            }
+            return;
+        }
+        
+        if (!title.contains("Arena Editor:")) return;
         
         event.setCancelled(true);
         
@@ -348,7 +409,7 @@ public class ArenaEditorGui implements Listener {
                 
             case 49: // Back
                 player.closeInventory();
-                plugin.getGuiManager().openArenaListGui(player);
+                openArenaListGui(player);
                 break;
         }
     }
@@ -453,5 +514,9 @@ public class ArenaEditorGui implements Listener {
             
             Bukkit.getScheduler().runTask(plugin, () -> openArenaEditor(player, arenaName));
         }
+    }
+
+    public void reloadConfigs() {
+        plugin.getLogger().info("Arena Editor GUI configurations reloaded");
     }
 }
