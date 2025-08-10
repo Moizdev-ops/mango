@@ -1,6 +1,8 @@
 package me.moiz.mangoparty.models;
 
 import org.bukkit.Location;
+import java.util.ArrayList;
+import java.util.List;
 
 public class Arena {
     private String name;
@@ -10,10 +12,12 @@ public class Arena {
     private Location center;
     private Location spawn1;
     private Location spawn2;
+    private List<String> allowedKits;
     
     public Arena(String name, String world) {
         this.name = name;
         this.world = world;
+        this.allowedKits = new ArrayList<>();
     }
     
     public String getName() {
@@ -62,6 +66,28 @@ public class Arena {
     
     public void setSpawn2(Location spawn2) {
         this.spawn2 = spawn2;
+    }
+    
+    public List<String> getAllowedKits() {
+        return new ArrayList<>(allowedKits);
+    }
+    
+    public void setAllowedKits(List<String> allowedKits) {
+        this.allowedKits = new ArrayList<>(allowedKits);
+    }
+    
+    public void addAllowedKit(String kitName) {
+        if (!allowedKits.contains(kitName)) {
+            allowedKits.add(kitName);
+        }
+    }
+    
+    public void removeAllowedKit(String kitName) {
+        allowedKits.remove(kitName);
+    }
+    
+    public boolean isKitAllowed(String kitName) {
+        return allowedKits.isEmpty() || allowedKits.contains(kitName);
     }
     
     public boolean isComplete() {

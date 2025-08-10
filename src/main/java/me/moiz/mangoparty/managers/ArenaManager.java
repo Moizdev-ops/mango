@@ -21,12 +21,14 @@ import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.YamlConfiguration;
+import org.bukkit.util.Vector;
 
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -87,6 +89,9 @@ public class ArenaManager {
             if (section.contains("spawn2")) {
                 arena.setSpawn2(deserializeLocation(section.getConfigurationSection("spawn2")));
             }
+            if (section.contains("allowedKits")) {
+                arena.setAllowedKits(section.getStringList("allowedKits"));
+            }
             
             return arena;
         } catch (Exception e) {
@@ -136,6 +141,15 @@ public class ArenaManager {
         return null; // No available arenas
     }
     
+    public Arena getAvailableArenaForKit(String kitName) {
+        for (Arena arena : arenas.values()) {
+            if (arena.isComplete() && !reservedArenas.contains(arena.getName()) && arena.isKitAllowed(kitName)) {
+                return arena;
+            }
+        }
+        return null; // No available arenas for this kit
+    }
+    
     public void reserveArena(String arenaName) {
         reservedArenas.add(arenaName);
     }
@@ -167,6 +181,9 @@ public class ArenaManager {
         if (arena.getSpawn2() != null) {
             serializeLocation(arenaSection.createSection("spawn2"), arena.getSpawn2());
         }
+        if (!arena.getAllowedKits().isEmpty()) {
+            arenaSection.set("allowedKits", arena.getAllowedKits());
+        }
         
         try {
             arenasConfig.save(arenasFile);
@@ -196,6 +213,134 @@ public class ArenaManager {
         }
         
         plugin.getLogger().info("Deleted arena: " + name);
+    }
+    
+    public Arena cloneArena(Arena originalArena, Location newCenterLocation) {
+        if (!originalArena.isComplete()) {
+            return null;
+        }
+        
+        // Generate new arena name
+        String newArenaName = generateCloneName(originalArena.getName());
+        
+        // Check if arena already exists
+        if (arenas.containsKey(newArenaName)) {
+            return null;
+        }
+        
+        try {
+            // Paste the schematic at new location
+            boolean pasteSuccess = pasteSchematicAtLocation(originalArena, newCenterLocation);
+            if (!pasteSuccess) {
+                return null;
+            }
+            
+            // Create new arena with calculated positions
+            Arena newArena = new Arena(newArenaName, newCenterLocation.getWorld().getName());
+            
+            // Calculate offsets from original center
+            Location originalCenter = originalArena.getCenter();
+            Vector spawn1Offset = originalArena.getSpawn1().toVector().subtract(originalCenter.toVector());
+            Vector spawn2Offset = originalArena.getSpawn2().toVector().subtract(originalCenter.toVector());
+            Vector corner1Offset = originalArena.getCorner1().toVector().subtract(originalCenter.toVector());
+            Vector corner2Offset = originalArena.getCorner2().toVector().subtract(originalCenter.toVector());
+            
+            // Apply offsets to new center
+            newArena.setCenter(newCenterLocation.clone());
+            newArena.setSpawn1(newCenterLocation.clone().add(spawn1Offset));
+            newArena.setSpawn2(newCenterLocation.clone().add(spawn2Offset));
+            newArena.setCorner1(newCenterLocation.clone().add(corner1Offset));
+            newArena.setCorner2(newCenterLocation.clone().add(corner2Offset));
+            
+            // Copy allowed kits
+            newArena.setAllowedKits(originalArena.getAllowedKits());
+            
+            // Save arena
+            arenas.put(newArenaName, newArena);
+            saveArena(newArena);
+            
+            // Auto-save schematic
+            saveSchematic(newArena);
+            
+            plugin.getLogger().info("Cloned arena: " + originalArena.getName() + " -> " + newArenaName);
+            return newArena;
+            
+        } catch (Exception e) {
+            plugin.getLogger().severe("Failed to clone arena " + originalArena.getName() + ": " + e.getMessage());
+            e.printStackTrace();
+            return null;
+        }
+    }
+    
+    private String generateCloneName(String originalName) {
+        int counter = 1;
+        String baseName = originalName;
+        
+        // Remove existing number suffix if present
+        if (originalName.matches(".*_\\d+$")) {
+            baseName = originalName.replaceAll("_\\d+$", "");
+        }
+        
+        String newName;
+        do {
+            newName = baseName + "_" + counter;
+            counter++;
+        } while (arenas.containsKey(newName));
+        
+        return newName;
+    }
+    
+    private boolean pasteSchematicAtLocation(Arena originalArena, Location targetLocation) {
+        try {
+            File schematicsDir = new File(plugin.getDataFolder(), "schematics");
+            File schematicFile = new File(schematicsDir, originalArena.getName() + ".schem");
+            
+            if (!schematicFile.exists()) {
+                plugin.getLogger().warning("Schematic file not found: " + schematicFile.getPath());
+                return false;
+            }
+            
+            com.sk89q.worldedit.world.World world = BukkitAdapter.adapt(targetLocation.getWorld());
+            
+            ClipboardFormat format = ClipboardFormats.findByAlias("schem");
+            if (format == null) {
+                format = ClipboardFormats.findByAlias("schematic");
+            }
+            if (format == null) {
+                plugin.getLogger().severe("No schematic format found for reading!");
+                return false;
+            }
+            
+            try (ClipboardReader reader = format.getReader(new FileInputStream(schematicFile))) {
+                Clipboard clipboard = reader.read();
+            
+                try (EditSession editSession = WorldEdit.getInstance().newEditSession(world)) {
+                    // Calculate paste location to align centers
+                    Location originalCenter = originalArena.getCenter();
+                    Vector centerOffset = originalCenter.toVector().subtract(originalArena.getCorner1().toVector());
+                    
+                    BlockVector3 pasteLocation = BlockVector3.at(
+                        targetLocation.getBlockX() - centerOffset.getBlockX(),
+                        targetLocation.getBlockY() - centerOffset.getBlockY(),
+                        targetLocation.getBlockZ() - centerOffset.getBlockZ()
+                    );
+                
+                    Operation operation = new ClipboardHolder(clipboard)
+                        .createPaste(editSession)
+                        .to(pasteLocation)
+                        .ignoreAirBlocks(false)
+                        .build();
+                
+                    Operations.complete(operation);
+                }
+            }
+            
+            return true;
+        } catch (Exception e) {
+            plugin.getLogger().severe("Failed to paste schematic for arena cloning: " + e.getMessage());
+            e.printStackTrace();
+            return false;
+        }
     }
     
     public boolean saveSchematic(Arena arena) {

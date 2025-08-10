@@ -1,19 +1,15 @@
-title: "§6Kit Rules - {kit_name}"
+title: "§6Kit Editor - {kit_name}"
 size: 27
 
 buttons:
-  natural_health_regen:
+  change_icon:
     slot: 10
-    material_enabled: "GOLDEN_APPLE"
-    material_disabled: "ROTTEN_FLESH"
-    name_enabled: "§aNatural Health Regen: §2Enabled"
-    name_disabled: "§cNatural Health Regen: §4Disabled"
-    lore_enabled:
-      - "§7Players regenerate health naturally"
-      - "§7Click to disable"
-    lore_disabled:
-      - "§7Players don't regenerate health"
-      - "§7Click to enable"
+    material: "ITEM_FRAME"
+    name: "§eChange Kit Icon"
+    lore:
+      - "§7Hold an item and click to set"
+      - "§7as the kit icon"
+      - "§7Updates all GUIs automatically"
     customModelData: 0
   
   block_break:
@@ -30,18 +26,15 @@ buttons:
       - "§7Click to enable"
     customModelData: 0
   
-  block_place:
+  manage_gui_placement:
     slot: 12
-    material_enabled: "GRASS_BLOCK"
-    material_disabled: "BARRIER"
-    name_enabled: "§aBlock Placing: §2Enabled"
-    name_disabled: "§cBlock Placing: §4Disabled"
-    lore_enabled:
-      - "§7Players can place blocks"
-      - "§7Click to disable"
-    lore_disabled:
-      - "§7Players cannot place blocks"
-      - "§7Click to enable"
+    material: "COMPASS"
+    name: "§6Manage GUI Placement"
+    lore:
+      - "§aLeft Click: §7Add to GUI"
+      - "§cRight Click: §7Remove from GUI"
+      - ""
+      - "§7Supports: Split, FFA, 1v1, 2v2, 3v3"
     customModelData: 0
   
   damage_multiplier:
@@ -72,15 +65,13 @@ buttons:
       - "§7Click to enable"
     customModelData: 0
 
-  edit_icon:
-    slot: 16
-    material: "ITEM_FRAME"
-    name: "§6Edit Kit Icon"
+  edit_slots:
+    slot: 23
+    material: "COMPASS"
+    name: "§bEdit GUI Slots"
     lore:
-      - "§7Hold an item in your main hand"
-      - "§7and click to set it as the kit icon"
-      - "§7This icon will appear in ALL GUIs"
-      - "§7universally across the plugin"
+      - "§7Click to edit slot positions"
+      - "§7for this kit in all GUIs"
     customModelData: 0
 
   add_to_gui:
@@ -92,16 +83,4 @@ buttons:
       - "§c§lRight Click: §7Remove kit from GUIs"
       - "§7Manage kit placement in:"
       - "§7• Split, FFA, Queue GUIs"
-    customModelData: 0
-
-  edit_slots:
-    slot: 23
-    material: "COMPASS"
-    name: "§bEdit GUI Slots"
-    lore:
-      - "§7Click to edit slot positions"
-      - "§7for this kit in different GUIs"
-      - "§7• Change Split GUI slot"
-      - "§7• Change FFA GUI slot"
-      - "§7• Change Queue GUI slots"
     customModelData: 0

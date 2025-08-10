@@ -55,3 +55,26 @@ buttons:
       - "§7Click to save arena schematic"
       - "§7Requires both corners to be set"
     customModelData: 0
+  
+  clone_arena:
+    slot: 15
+    material: "STRUCTURE_BLOCK"
+    name: "§bClone Arena"
+    lore:
+      - "§7Click to clone this arena"
+      - "§7Pastes at your current location"
+      - "§7Requires complete arena setup"
+      - "§7Auto-generates new arena name"
+    customModelData: 0
+  
+  manage_kits:
+    slot: 4
+    material: "CHEST"
+    name: "§6Manage Allowed Kits"
+    lore:
+      - "§7Left Click: §aAdd Kit"
+      - "§7Right Click: §cRemove Kit"
+      - "§7Current: {allowed_kits}"
+      - ""
+      - "§7Empty list = All kits allowed"
+    customModelData: 0

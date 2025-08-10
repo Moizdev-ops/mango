@@ -2,6 +2,7 @@ package me.moiz.mangoparty.gui;
 
 import me.moiz.mangoparty.MangoParty;
 import me.moiz.mangoparty.models.Arena;
+import me.moiz.mangoparty.models.Kit;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -10,7 +11,9 @@ import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
+import org.bukkit.event.inventory.ClickType;
 import org.bukkit.event.inventory.InventoryClickEvent;
+import org.bukkit.event.player.AsyncPlayerChatEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.block.Action;
 import org.bukkit.inventory.Inventory;
@@ -31,11 +34,15 @@ public class ArenaEditorGui implements Listener {
     private YamlConfiguration arenaEditorConfig;
     private Map<UUID, String> pendingLocationSets;
     private Map<UUID, String> pendingArenas;
+    private Map<UUID, String> pendingKitManagement;
+    private Map<UUID, String> pendingKitAction; // "add" or "remove"
     
     public ArenaEditorGui(MangoParty plugin) {
         this.plugin = plugin;
         this.pendingLocationSets = new HashMap<>();
         this.pendingArenas = new HashMap<>();
+        this.pendingKitManagement = new HashMap<>();
+        this.pendingKitAction = new HashMap<>();
         loadConfigs();
         Bukkit.getPluginManager().registerEvents(this, plugin);
     }
@@ -58,6 +65,10 @@ public class ArenaEditorGui implements Listener {
         
         arenaListConfig = YamlConfiguration.loadConfiguration(arenaListFile);
         arenaEditorConfig = YamlConfiguration.loadConfiguration(arenaEditorFile);
+    }
+    
+    public void reloadConfigs() {
+        loadConfigs();
     }
     
     public void openArenaListGui(Player player) {
@@ -173,6 +184,13 @@ public class ArenaEditorGui implements Listener {
                 return line.replace("{corner1_status}", arena.getCorner1() != null ? "§aSet" : "§cNot Set");
             case "corner2":
                 return line.replace("{corner2_status}", arena.getCorner2() != null ? "§aSet" : "§cNot Set");
+            case "manage_kits":
+                List<String> allowedKits = arena.getAllowedKits();
+                if (allowedKits.isEmpty()) {
+                    return line.replace("{allowed_kits}", "§7All kits allowed");
+                } else {
+                    return line.replace("{allowed_kits}", "§a" + String.join("§7, §a", allowedKits));
+                }
             default:
                 return line;
         }
@@ -206,7 +224,7 @@ public class ArenaEditorGui implements Listener {
             
             String buttonType = identifyButton(event.getSlot());
             if (buttonType != null) {
-                handleEditorButtonClick(player, arenaName, buttonType);
+                handleEditorButtonClick(player, arenaName, buttonType, event.getClick());
             }
         }
     }
@@ -245,7 +263,7 @@ public class ArenaEditorGui implements Listener {
         return null;
     }
     
-    private void handleEditorButtonClick(Player player, String arenaName, String buttonType) {
+    private void handleEditorButtonClick(Player player, String arenaName, String buttonType, ClickType clickType) {
         if ("generate_schematic".equals(buttonType)) {
             Arena arena = plugin.getArenaManager().getArena(arenaName);
             if (arena == null) {
@@ -264,7 +282,86 @@ public class ArenaEditorGui implements Listener {
             } else {
                 player.sendMessage("§cFailed to generate schematic for arena: " + arenaName);
             }
+            
+            // Reopen GUI after 1 tick
+            Bukkit.getScheduler().runTaskLater(plugin, () -> {
+                openArenaEditorGui(player, arenaName);
+            }, 1L);
+            
+        } else if ("clone_arena".equals(buttonType)) {
+            Arena arena = plugin.getArenaManager().getArena(arenaName);
+            if (arena == null) {
+                player.sendMessage("§cArena not found!");
+                return;
+            }
+            
+            if (!arena.isComplete()) {
+                player.sendMessage("§cArena must be complete before cloning!");
+                return;
+            }
+            
             player.closeInventory();
+            player.sendMessage("§eCloning arena '" + arenaName + "' at your location...");
+            
+            // Clone arena at player's location
+            Arena clonedArena = plugin.getArenaManager().cloneArena(arena, player.getLocation());
+            if (clonedArena != null) {
+                player.sendMessage("§aArena cloned successfully as: " + clonedArena.getName());
+            } else {
+                player.sendMessage("§cFailed to clone arena!");
+            }
+            
+            // Reopen GUI after 2 seconds
+            Bukkit.getScheduler().runTaskLater(plugin, () -> {
+                openArenaEditorGui(player, arenaName);
+            }, 40L);
+            
+        } else if ("manage_kits".equals(buttonType)) {
+            if (clickType == ClickType.LEFT) {
+                // Add kit
+                pendingKitManagement.put(player.getUniqueId(), arenaName);
+                pendingKitAction.put(player.getUniqueId(), "add");
+                
+                player.closeInventory();
+                player.sendMessage("§e▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
+                player.sendMessage("§6KIT MANAGEMENT");
+                player.sendMessage("§7Arena: §e" + arenaName);
+                player.sendMessage("§7Action: §aAdd Kit");
+                player.sendMessage("");
+                player.sendMessage("§7Please type the kit name to add:");
+                player.sendMessage("§7Or type 'cancel' to cancel");
+                player.sendMessage("§e▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
+                
+            } else if (clickType == ClickType.RIGHT) {
+                // Remove kit
+                pendingKitManagement.put(player.getUniqueId(), arenaName);
+                pendingKitAction.put(player.getUniqueId(), "remove");
+                
+                player.closeInventory();
+                player.sendMessage("§e▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
+                player.sendMessage("§6KIT MANAGEMENT");
+                player.sendMessage("§7Arena: §e" + arenaName);
+                player.sendMessage("§7Action: §cRemove Kit");
+                player.sendMessage("");
+                player.sendMessage("§7Please type the kit name to remove:");
+                player.sendMessage("§7Or type 'cancel' to cancel");
+                player.sendMessage("§e▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
+            }
+            
+            // Schedule expiration
+            new BukkitRunnable() {
+                @Override
+                public void run() {
+                    if (pendingKitManagement.containsKey(player.getUniqueId())) {
+                        pendingKitManagement.remove(player.getUniqueId());
+                        pendingKitAction.remove(player.getUniqueId());
+                        if (player.isOnline()) {
+                            player.sendMessage("§cKit management expired.");
+                        }
+                    }
+                }
+            }.runTaskLater(plugin, 600L); // 30 seconds
+            
         } else {
             // Set up location setting
             pendingLocationSets.put(player.getUniqueId(), buttonType);
@@ -334,6 +431,73 @@ public class ArenaEditorGui implements Listener {
             }
             
             plugin.getArenaManager().saveArena(arena);
+            
+            // Reopen GUI after 1 tick
+            Bukkit.getScheduler().runTaskLater(plugin, () -> {
+                openArenaEditorGui(player, arenaName);
+            }, 1L);
         }
+    }
+    
+    @EventHandler
+    public void onPlayerChat(AsyncPlayerChatEvent event) {
+        Player player = event.getPlayer();
+        UUID playerId = player.getUniqueId();
+        
+        if (!pendingKitManagement.containsKey(playerId)) return;
+        
+        event.setCancelled(true);
+        
+        String arenaName = pendingKitManagement.remove(playerId);
+        String action = pendingKitAction.remove(playerId);
+        String input = event.getMessage().trim();
+        
+        if (input.equalsIgnoreCase("cancel")) {
+            player.sendMessage("§cKit management cancelled.");
+            // Reopen GUI after 1 tick
+            Bukkit.getScheduler().runTask(plugin, () -> {
+                openArenaEditorGui(player, arenaName);
+            });
+            return;
+        }
+        
+        Arena arena = plugin.getArenaManager().getArena(arenaName);
+        if (arena == null) {
+            player.sendMessage("§cArena not found!");
+            return;
+        }
+        
+        Kit kit = plugin.getKitManager().getKit(input);
+        if (kit == null) {
+            player.sendMessage("§cKit '" + input + "' not found!");
+            // Reopen GUI after 1 tick
+            Bukkit.getScheduler().runTask(plugin, () -> {
+                openArenaEditorGui(player, arenaName);
+            });
+            return;
+        }
+        
+        if ("add".equals(action)) {
+            if (arena.isKitAllowed(input)) {
+                player.sendMessage("§cKit '" + input + "' is already allowed in this arena!");
+            } else {
+                arena.addAllowedKit(input);
+                plugin.getArenaManager().saveArena(arena);
+                player.sendMessage("§aKit '" + input + "' added to arena '" + arenaName + "'!");
+            }
+        } else if ("remove".equals(action)) {
+            if (!arena.isKitAllowed(input) && !arena.getAllowedKits().isEmpty()) {
+                player.sendMessage("§cKit '" + input + "' is not in the allowed list!");
+            } else {
+                arena.removeAllowedKit(input);
+                plugin.getArenaManager().saveArena(arena);
+                player.sendMessage("§aKit '" + input + "' removed from arena '" + arenaName + "'!");
+            }
+        }
+        
+        // Reopen GUI after 1 tick
+        Bukkit.getScheduler().runTask(plugin, () -> {
+            openArenaEditorGui(player, arenaName);
+        });
     }
 }

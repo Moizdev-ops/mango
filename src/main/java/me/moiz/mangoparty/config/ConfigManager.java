@@ -4,11 +4,14 @@ import me.moiz.mangoparty.MangoParty;
 import me.moiz.mangoparty.models.Kit;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.YamlConfiguration;
+import org.bukkit.inventory.ItemStack;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 public class ConfigManager {
@@ -124,358 +127,322 @@ public class ConfigManager {
         }
     }
 
-    public boolean addKitToGuiConfig(Kit kit, String matchType, Integer slot) {
-        File guiDir = new File(plugin.getDataFolder(), "gui");
-        File guiFile;
-        YamlConfiguration guiConfig;
-
-        if (matchType.equalsIgnoreCase("split")) {
-            guiFile = new File(guiDir, "split.yml");
-        } else if (matchType.equalsIgnoreCase("ffa")) {
-            guiFile = new File(guiDir, "ffa.yml");
-        } else {
-            return false; // Invalid match type
-        }
-
-        if (!guiFile.exists()) {
-            plugin.getLogger().warning("GUI config file not found: " + guiFile.getName());
-            return false;
-        }
-
-        guiConfig = YamlConfiguration.loadConfiguration(guiFile);
-
-        // Check if kit already exists in this GUI config
-        ConfigurationSection kitsSection = guiConfig.getConfigurationSection("kits");
-        if (kitsSection != null) {
-            for (String key : kitsSection.getKeys(false)) {
-                if (kitsSection.getString(key + ".kit", "").equalsIgnoreCase(kit.getName())) {
-                    plugin.getLogger().info("Kit " + kit.getName() + " already exists in " + matchType + " GUI.");
-                    return false; // Kit already exists
-                }
-            }
-        } else {
-            kitsSection = guiConfig.createSection("kits");
-        }
-
-        // Determine slot
-        if (slot == null) {
-            // Find next available slot
-            Set<String> existingKitKeys = kitsSection.getKeys(false);
-            List<Integer> usedSlots = new ArrayList<>();
-            for (String key : existingKitKeys) {
-                usedSlots.add(kitsSection.getInt(key + ".slot"));
-            }
-
-            for (int i = 0; i < guiConfig.getInt("size", 27); i++) {
-                if (!usedSlots.contains(i)) {
-                    slot = i;
-                    break;
-                }
-            }
-            if (slot == null) {
-                plugin.getLogger().warning("No available slot found in " + matchType + " GUI for kit " + kit.getName());
-                return false; // No available slot
-            }
-        } else {
-            // Check if provided slot is already taken
-            Set<String> existingKitKeys = kitsSection.getKeys(false);
-            for (String key : existingKitKeys) {
-                if (kitsSection.getInt(key + ".slot") == slot) {
-                    plugin.getLogger().warning("Slot " + slot + " is already taken in " + matchType + " GUI.");
-                    return false; // Slot already taken
-                }
-            }
-        }
-
-        // Add kit details to config
-        String kitConfigKey = kit.getName().toLowerCase().replace(" ", "_"); // Sanitize key
-        kitsSection.set(kitConfigKey + ".slot", slot);
-        kitsSection.set(kitConfigKey + ".name", kit.getDisplayName());
-        kitsSection.set(kitConfigKey + ".kit", kit.getName());
-        
-        // Default lore if none exists
-        List<String> defaultLore = new ArrayList<>();
-        defaultLore.add("§7A custom kit created by an admin.");
-        kitsSection.set(kitConfigKey + ".lore", defaultLore);
-
-        // Add customModelData if the kit's icon has it
-        if (kit.getIcon() != null && kit.getIcon().hasItemMeta() && kit.getIcon().getItemMeta().hasCustomModelData()) {
-            kitsSection.set(kitConfigKey + ".customModelData", kit.getIcon().getItemMeta().getCustomModelData());
-        }
-
+    public boolean addKitToGuiConfig(Kit kit, String guiType, Integer slot) {
         try {
-            guiConfig.save(guiFile);
-            return true;
-        } catch (IOException e) {
-            plugin.getLogger().severe("Failed to save " + guiFile.getName() + ": " + e.getMessage());
-            return false;
-        }
-    }
-
-    public boolean addKitToQueueGuiConfig(Kit kit, String mode, Integer slot) {
-        File guiDir = new File(plugin.getDataFolder(), "gui");
-        File guiFile = new File(guiDir, mode + "kits.yml");
-        YamlConfiguration guiConfig;
-
-        if (!guiFile.exists()) {
-            // Create default queue config
-            guiConfig = new YamlConfiguration();
-            guiConfig.set("title", "§6" + mode.toUpperCase() + " Kit Selection");
-            guiConfig.set("size", 27);
-            guiConfig.set("kits", "");
-            
-            try {
-                guiConfig.save(guiFile);
-            } catch (IOException e) {
-                plugin.getLogger().severe("Failed to create " + guiFile.getName() + ": " + e.getMessage());
+            File guiFile = new File(plugin.getDataFolder(), "gui/" + guiType + ".yml");
+            if (!guiFile.exists()) {
+                plugin.getLogger().warning("GUI file not found: " + guiFile.getPath());
                 return false;
             }
-        }
-
-        guiConfig = YamlConfiguration.loadConfiguration(guiFile);
-
-        // Check if kit already exists in this GUI config
-        ConfigurationSection kitsSection = guiConfig.getConfigurationSection("kits");
-        if (kitsSection != null) {
-            if (kitsSection.contains(kit.getName())) {
-                plugin.getLogger().info("Kit " + kit.getName() + " already exists in " + mode + " queue GUI.");
+            
+            YamlConfiguration config = YamlConfiguration.loadConfiguration(guiFile);
+            
+            // Check if kit already exists
+            ConfigurationSection kitsSection = config.getConfigurationSection("kits");
+            if (kitsSection != null && kitsSection.contains(kit.getName())) {
                 return false; // Kit already exists
             }
-        } else {
-            kitsSection = guiConfig.createSection("kits");
-        }
-
-        // Determine slot
-        if (slot == null) {
-            // Find next available slot
-            Set<String> existingKitKeys = kitsSection.getKeys(false);
-            List<Integer> usedSlots = new ArrayList<>();
-            for (String key : existingKitKeys) {
-                usedSlots.add(kitsSection.getInt(key + ".slot"));
-            }
-
-            for (int i = 0; i < guiConfig.getInt("size", 27); i++) {
-                if (!usedSlots.contains(i)) {
-                    slot = i;
-                    break;
-                }
-            }
-            if (slot == null) {
-                plugin.getLogger().warning("No available slot found in " + mode + " queue GUI for kit " + kit.getName());
-                return false; // No available slot
-            }
-        } else {
-            // Check if provided slot is already taken
-            Set<String> existingKitKeys = kitsSection.getKeys(false);
-            for (String key : existingKitKeys) {
-                if (kitsSection.getInt(key + ".slot") == slot) {
-                    plugin.getLogger().warning("Slot " + slot + " is already taken in " + mode + " queue GUI.");
-                    return false; // Slot already taken
-                }
-            }
-        }
-
-        // Add kit details to config
-        String kitConfigKey = kit.getName();
-        kitsSection.set(kitConfigKey + ".slot", slot);
-        kitsSection.set(kitConfigKey + ".material", kit.getIcon() != null ? kit.getIcon().getType().toString() : "IRON_SWORD");
-        kitsSection.set(kitConfigKey + ".name", kit.getDisplayName());
-        
-        // Default lore with queue placeholder
-        List<String> defaultLore = new ArrayList<>();
-        defaultLore.add("§7Click to queue with this kit.");
-        defaultLore.add("§eQueued: {queued}");
-        kitsSection.set(kitConfigKey + ".lore", defaultLore);
-
-        // Add customModelData if the kit's icon has it
-        if (kit.getIcon() != null && kit.getIcon().hasItemMeta() && kit.getIcon().getItemMeta().hasCustomModelData()) {
-            kitsSection.set(kitConfigKey + ".customModelData", kit.getIcon().getItemMeta().getCustomModelData());
-        }
-
-        try {
-            guiConfig.save(guiFile);
-            return true;
-        } catch (IOException e) {
-            plugin.getLogger().severe("Failed to save " + guiFile.getName() + ": " + e.getMessage());
-            return false;
-        }
-    }
-
-    public boolean removeKitFromGuiConfig(Kit kit, String matchType) {
-        File guiDir = new File(plugin.getDataFolder(), "gui");
-        File guiFile;
-        YamlConfiguration guiConfig;
-
-        if (matchType.equalsIgnoreCase("split")) {
-            guiFile = new File(guiDir, "split.yml");
-        } else if (matchType.equalsIgnoreCase("ffa")) {
-            guiFile = new File(guiDir, "ffa.yml");
-        } else {
-            return false; // Invalid match type
-        }
-
-        if (!guiFile.exists()) {
-            plugin.getLogger().warning("GUI config file not found: " + guiFile.getName());
-            return false;
-        }
-
-        guiConfig = YamlConfiguration.loadConfiguration(guiFile);
-
-        // Find and remove the kit
-        ConfigurationSection kitsSection = guiConfig.getConfigurationSection("kits");
-        if (kitsSection != null) {
-            for (String key : kitsSection.getKeys(false)) {
-                if (kitsSection.getString(key + ".kit", "").equalsIgnoreCase(kit.getName())) {
-                    kitsSection.set(key, null);
-                    
-                    try {
-                        guiConfig.save(guiFile);
-                        return true;
-                    } catch (IOException e) {
-                        plugin.getLogger().severe("Failed to save " + guiFile.getName() + ": " + e.getMessage());
-                        return false;
-                    }
-                }
-            }
-        }
-        
-        return false; // Kit not found
-    }
-
-    public boolean removeKitFromQueueGuiConfig(Kit kit, String mode) {
-        File guiDir = new File(plugin.getDataFolder(), "gui");
-        File guiFile = new File(guiDir, mode + "kits.yml");
-        YamlConfiguration guiConfig;
-
-        if (!guiFile.exists()) {
-            plugin.getLogger().warning("Queue GUI config file not found: " + guiFile.getName());
-            return false;
-        }
-
-        guiConfig = YamlConfiguration.loadConfiguration(guiFile);
-
-        // Remove the kit
-        ConfigurationSection kitsSection = guiConfig.getConfigurationSection("kits");
-        if (kitsSection != null && kitsSection.contains(kit.getName())) {
-            kitsSection.set(kit.getName(), null);
             
-            try {
-                guiConfig.save(guiFile);
-                return true;
-            } catch (IOException e) {
-                plugin.getLogger().severe("Failed to save " + guiFile.getName() + ": " + e.getMessage());
+            // Create kits section if it doesn't exist
+            if (kitsSection == null) {
+                kitsSection = config.createSection("kits");
+            }
+            
+            // Find available slot if not specified
+            if (slot == null) {
+                slot = findAvailableSlot(config);
+            }
+            
+            // Add kit configuration
+            ConfigurationSection kitSection = kitsSection.createSection(kit.getName());
+            kitSection.set("slot", slot);
+            kitSection.set("material", kit.getIcon().getType().name());
+            kitSection.set("name", "§e" + kit.getName());
+            kitSection.set("lore", java.util.Arrays.asList("§7Click to select this kit"));
+            
+            if (kit.getIcon().hasItemMeta() && kit.getIcon().getItemMeta().hasCustomModelData()) {
+                kitSection.set("customModelData", kit.getIcon().getItemMeta().getCustomModelData());
+            }
+            
+            config.save(guiFile);
+            return true;
+            
+        } catch (IOException e) {
+            plugin.getLogger().severe("Failed to save GUI config: " + e.getMessage());
+            return false;
+        }
+    }
+    
+    public boolean addKitToQueueGuiConfig(Kit kit, String queueType, Integer slot) {
+        try {
+            File guiFile = new File(plugin.getDataFolder(), "gui/" + queueType + "kits.yml");
+            if (!guiFile.exists()) {
+                plugin.getLogger().warning("Queue GUI file not found: " + guiFile.getPath());
                 return false;
             }
-        }
-        
-        return false; // Kit not found
-    }
-
-    public void updateKitIconInAllGuis(Kit kit) {
-        if (kit.getIcon() == null) return;
-        
-        String materialName = kit.getIcon().getType().toString();
-        Integer customModelData = null;
-        if (kit.getIcon().hasItemMeta() && kit.getIcon().getItemMeta().hasCustomModelData()) {
-            customModelData = kit.getIcon().getItemMeta().getCustomModelData();
-        }
-        
-        // Update split and ffa GUIs
-        updateKitIconInGuiConfig(kit, "split", materialName, customModelData);
-        updateKitIconInGuiConfig(kit, "ffa", materialName, customModelData);
-        
-        // Update queue GUIs
-        updateKitIconInQueueGuiConfig(kit, "1v1", materialName, customModelData);
-        updateKitIconInQueueGuiConfig(kit, "2v2", materialName, customModelData);
-        updateKitIconInQueueGuiConfig(kit, "3v3", materialName, customModelData);
-    }
-
-    private void updateKitIconInGuiConfig(Kit kit, String matchType, String materialName, Integer customModelData) {
-        File guiDir = new File(plugin.getDataFolder(), "gui");
-        File guiFile = new File(guiDir, matchType + ".yml");
-        
-        if (!guiFile.exists()) return;
-        
-        YamlConfiguration guiConfig = YamlConfiguration.loadConfiguration(guiFile);
-        ConfigurationSection kitsSection = guiConfig.getConfigurationSection("kits");
-        
-        if (kitsSection != null) {
-            for (String key : kitsSection.getKeys(false)) {
-                if (kitsSection.getString(key + ".kit", "").equalsIgnoreCase(kit.getName())) {
-                    // Update material (icon is handled by kit.getIcon() in GUI creation)
-                    if (customModelData != null) {
-                        kitsSection.set(key + ".customModelData", customModelData);
-                    }
-                    
-                    try {
-                        guiConfig.save(guiFile);
-                        plugin.getLogger().info("Updated kit icon in " + matchType + " GUI for kit: " + kit.getName());
-                    } catch (IOException e) {
-                        plugin.getLogger().severe("Failed to update icon in " + guiFile.getName() + ": " + e.getMessage());
-                    }
-                    break;
-                }
-            }
-        }
-    }
-
-    private void updateKitIconInQueueGuiConfig(Kit kit, String mode, String materialName, Integer customModelData) {
-        File guiDir = new File(plugin.getDataFolder(), "gui");
-        File guiFile = new File(guiDir, mode + "kits.yml");
-        
-        if (!guiFile.exists()) return;
-        
-        YamlConfiguration guiConfig = YamlConfiguration.loadConfiguration(guiFile);
-        ConfigurationSection kitsSection = guiConfig.getConfigurationSection("kits");
-        
-        if (kitsSection != null && kitsSection.contains(kit.getName())) {
-            kitsSection.set(kit.getName() + ".material", materialName);
-            if (customModelData != null) {
-                kitsSection.set(kit.getName() + ".customModelData", customModelData);
+            
+            YamlConfiguration config = YamlConfiguration.loadConfiguration(guiFile);
+            
+            // Check if kit already exists
+            ConfigurationSection kitsSection = config.getConfigurationSection("kits");
+            if (kitsSection != null && kitsSection.contains(kit.getName())) {
+                return false; // Kit already exists
             }
             
-            try {
-                guiConfig.save(guiFile);
-                plugin.getLogger().info("Updated kit icon in " + mode + " queue GUI for kit: " + kit.getName());
-            } catch (IOException e) {
-                plugin.getLogger().severe("Failed to update icon in " + guiFile.getName() + ": " + e.getMessage());
+            // Create kits section if it doesn't exist
+            if (kitsSection == null) {
+                kitsSection = config.createSection("kits");
             }
+            
+            // Find available slot if not specified
+            if (slot == null) {
+                slot = findAvailableSlot(config);
+            }
+            
+            // Add kit configuration
+            ConfigurationSection kitSection = kitsSection.createSection(kit.getName());
+            kitSection.set("slot", slot);
+            kitSection.set("material", kit.getIcon().getType().name());
+            kitSection.set("name", "§e" + kit.getName());
+            kitSection.set("lore", java.util.Arrays.asList("§7Click to queue with this kit"));
+            
+            if (kit.getIcon().hasItemMeta() && kit.getIcon().getItemMeta().hasCustomModelData()) {
+                kitSection.set("customModelData", kit.getIcon().getItemMeta().getCustomModelData());
+            }
+            
+            config.save(guiFile);
+            return true;
+            
+        } catch (IOException e) {
+            plugin.getLogger().severe("Failed to save queue GUI config: " + e.getMessage());
+            return false;
         }
     }
-
-    public String getKitSlotInGui(Kit kit, String matchType) {
-        File guiDir = new File(plugin.getDataFolder(), "gui");
-        File guiFile = new File(guiDir, matchType + ".yml");
+    
+    public boolean removeKitFromGuiConfig(String kitName, String guiType) {
+        try {
+            File guiFile = new File(plugin.getDataFolder(), "gui/" + guiType + ".yml");
+            if (!guiFile.exists()) {
+                return false;
+            }
+            
+            YamlConfiguration config = YamlConfiguration.loadConfiguration(guiFile);
+            ConfigurationSection kitsSection = config.getConfigurationSection("kits");
+            
+            if (kitsSection == null || !kitsSection.contains(kitName)) {
+                return false; // Kit doesn't exist
+            }
+            
+            kitsSection.set(kitName, null);
+            config.save(guiFile);
+            return true;
+            
+        } catch (IOException e) {
+            plugin.getLogger().severe("Failed to save GUI config: " + e.getMessage());
+            return false;
+        }
+    }
+    
+    public boolean removeKitFromQueueGuiConfig(String kitName, String queueType) {
+        try {
+            File guiFile = new File(plugin.getDataFolder(), "gui/" + queueType + "kits.yml");
+            if (!guiFile.exists()) {
+                return false;
+            }
+            
+            YamlConfiguration config = YamlConfiguration.loadConfiguration(guiFile);
+            ConfigurationSection kitsSection = config.getConfigurationSection("kits");
+            
+            if (kitsSection == null || !kitsSection.contains(kitName)) {
+                return false; // Kit doesn't exist
+            }
+            
+            kitsSection.set(kitName, null);
+            config.save(guiFile);
+            return true;
+            
+        } catch (IOException e) {
+            plugin.getLogger().severe("Failed to save queue GUI config: " + e.getMessage());
+            return false;
+        }
+    }
+    
+    public void updateKitIconInAllGuis(Kit kit) {
+        String[] guiTypes = {"split", "ffa"};
+        String[] queueTypes = {"1v1", "2v2", "3v3"};
         
-        if (!guiFile.exists()) return "Not in GUI";
+        // Update regular GUIs
+        for (String guiType : guiTypes) {
+            updateKitIconInGui(kit, guiType);
+        }
         
-        YamlConfiguration guiConfig = YamlConfiguration.loadConfiguration(guiFile);
-        ConfigurationSection kitsSection = guiConfig.getConfigurationSection("kits");
-        
-        if (kitsSection != null) {
-            for (String key : kitsSection.getKeys(false)) {
-                if (kitsSection.getString(key + ".kit", "").equalsIgnoreCase(kit.getName())) {
-                    return String.valueOf(kitsSection.getInt(key + ".slot"));
+        // Update queue GUIs
+        for (String queueType : queueTypes) {
+            updateKitIconInQueueGui(kit, queueType);
+        }
+    }
+    
+    private void updateKitIconInGui(Kit kit, String guiType) {
+        try {
+            File guiFile = new File(plugin.getDataFolder(), "gui/" + guiType + ".yml");
+            if (!guiFile.exists()) return;
+            
+            YamlConfiguration config = YamlConfiguration.loadConfiguration(guiFile);
+            ConfigurationSection kitsSection = config.getConfigurationSection("kits");
+            
+            if (kitsSection != null && kitsSection.contains(kit.getName())) {
+                ConfigurationSection kitSection = kitsSection.getConfigurationSection(kit.getName());
+                kitSection.set("material", kit.getIcon().getType().name());
+                
+                if (kit.getIcon().hasItemMeta() && kit.getIcon().getItemMeta().hasCustomModelData()) {
+                    kitSection.set("customModelData", kit.getIcon().getItemMeta().getCustomModelData());
+                } else {
+                    kitSection.set("customModelData", null);
+                }
+                
+                config.save(guiFile);
+            }
+        } catch (IOException e) {
+            plugin.getLogger().severe("Failed to update kit icon in GUI: " + e.getMessage());
+        }
+    }
+    
+    private void updateKitIconInQueueGui(Kit kit, String queueType) {
+        try {
+            File guiFile = new File(plugin.getDataFolder(), "gui/" + queueType + "kits.yml");
+            if (!guiFile.exists()) return;
+            
+            YamlConfiguration config = YamlConfiguration.loadConfiguration(guiFile);
+            ConfigurationSection kitsSection = config.getConfigurationSection("kits");
+            
+            if (kitsSection != null && kitsSection.contains(kit.getName())) {
+                ConfigurationSection kitSection = kitsSection.getConfigurationSection(kit.getName());
+                kitSection.set("material", kit.getIcon().getType().name());
+                
+                if (kit.getIcon().hasItemMeta() && kit.getIcon().getItemMeta().hasCustomModelData()) {
+                    kitSection.set("customModelData", kit.getIcon().getItemMeta().getCustomModelData());
+                } else {
+                    kitSection.set("customModelData", null);
+                }
+                
+                config.save(guiFile);
+            }
+        } catch (IOException e) {
+            plugin.getLogger().severe("Failed to update kit icon in queue GUI: " + e.getMessage());
+        }
+    }
+    
+    public Integer getKitSlotInGui(String kitName, String guiType) {
+        try {
+            String fileName = guiType.equals("1v1") || guiType.equals("2v2") || guiType.equals("3v3") 
+                ? guiType + "kits.yml" 
+                : guiType + ".yml";
+                
+            File guiFile = new File(plugin.getDataFolder(), "gui/" + fileName);
+            if (!guiFile.exists()) return null;
+            
+            YamlConfiguration config = YamlConfiguration.loadConfiguration(guiFile);
+            ConfigurationSection kitsSection = config.getConfigurationSection("kits");
+            
+            if (kitsSection != null && kitsSection.contains(kitName)) {
+                return kitsSection.getConfigurationSection(kitName).getInt("slot");
+            }
+            
+            return null;
+        } catch (Exception e) {
+            plugin.getLogger().severe("Failed to get kit slot: " + e.getMessage());
+            return null;
+        }
+    }
+    
+    public String getKitAtSlot(String guiType, int slot) {
+        try {
+            String fileName = guiType.equals("1v1") || guiType.equals("2v2") || guiType.equals("3v3") 
+                ? guiType + "kits.yml" 
+                : guiType + ".yml";
+                
+            File guiFile = new File(plugin.getDataFolder(), "gui/" + fileName);
+            if (!guiFile.exists()) return null;
+            
+            YamlConfiguration config = YamlConfiguration.loadConfiguration(guiFile);
+            ConfigurationSection kitsSection = config.getConfigurationSection("kits");
+            
+            if (kitsSection != null) {
+                for (String kitName : kitsSection.getKeys(false)) {
+                    ConfigurationSection kitSection = kitsSection.getConfigurationSection(kitName);
+                    if (kitSection.getInt("slot") == slot) {
+                        return kitName;
+                    }
                 }
             }
+            
+            return null;
+        } catch (Exception e) {
+            plugin.getLogger().severe("Failed to get kit at slot: " + e.getMessage());
+            return null;
         }
-        
-        return "Not in GUI";
     }
-
-    public String getKitSlotInQueueGui(Kit kit, String mode) {
-        File guiDir = new File(plugin.getDataFolder(), "gui");
-        File guiFile = new File(guiDir, mode + "kits.yml");
+    
+    public boolean updateKitSlotInGui(String kitName, String guiType, int newSlot) {
+        try {
+            File guiFile = new File(plugin.getDataFolder(), "gui/" + guiType + ".yml");
+            if (!guiFile.exists()) return false;
+            
+            YamlConfiguration config = YamlConfiguration.loadConfiguration(guiFile);
+            ConfigurationSection kitsSection = config.getConfigurationSection("kits");
+            
+            if (kitsSection != null && kitsSection.contains(kitName)) {
+                kitsSection.getConfigurationSection(kitName).set("slot", newSlot);
+                config.save(guiFile);
+                return true;
+            }
+            
+            return false;
+        } catch (IOException e) {
+            plugin.getLogger().severe("Failed to update kit slot: " + e.getMessage());
+            return false;
+        }
+    }
+    
+    public boolean updateKitSlotInQueueGui(String kitName, String queueType, int newSlot) {
+        try {
+            File guiFile = new File(plugin.getDataFolder(), "gui/" + queueType + "kits.yml");
+            if (!guiFile.exists()) return false;
+            
+            YamlConfiguration config = YamlConfiguration.loadConfiguration(guiFile);
+            ConfigurationSection kitsSection = config.getConfigurationSection("kits");
+            
+            if (kitsSection != null && kitsSection.contains(kitName)) {
+                kitsSection.getConfigurationSection(kitName).set("slot", newSlot);
+                config.save(guiFile);
+                return true;
+            }
+            
+            return false;
+        } catch (IOException e) {
+            plugin.getLogger().severe("Failed to update kit slot in queue GUI: " + e.getMessage());
+            return false;
+        }
+    }
+    
+    private int findAvailableSlot(YamlConfiguration config) {
+        ConfigurationSection kitsSection = config.getConfigurationSection("kits");
+        if (kitsSection == null) return 0;
         
-        if (!guiFile.exists()) return "Not in GUI";
-        
-        YamlConfiguration guiConfig = YamlConfiguration.loadConfiguration(guiFile);
-        ConfigurationSection kitsSection = guiConfig.getConfigurationSection("kits");
-        
-        if (kitsSection != null && kitsSection.contains(kit.getName())) {
-            return String.valueOf(kitsSection.getInt(kit.getName() + ".slot"));
+        // Get all used slots
+        Set<Integer> usedSlots = new HashSet<>();
+        for (String kitName : kitsSection.getKeys(false)) {
+            ConfigurationSection kitSection = kitsSection.getConfigurationSection(kitName);
+            usedSlots.add(kitSection.getInt("slot"));
         }
         
-        return "Not in GUI";
+        // Find first available slot
+        for (int i = 0; i < 54; i++) {
+            if (!usedSlots.contains(i)) {
+                return i;
+            }
+        }
+        
+        return 0; // Fallback
     }
 }
