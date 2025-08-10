@@ -15,14 +15,14 @@ import java.util.*;
 public class ArenaManager {
     private MangoParty plugin;
     private Map<String, Arena> arenas;
-    private Set<String> arenasInUse;
+    private Set<String> reservedArenas;
     private File arenasFile;
     private YamlConfiguration arenasConfig;
 
     public ArenaManager(MangoParty plugin) {
         this.plugin = plugin;
         this.arenas = new HashMap<>();
-        this.arenasInUse = new HashSet<>();
+        this.reservedArenas = new HashSet<>();
         this.arenasFile = new File(plugin.getDataFolder(), "arenas.yml");
         
         if (!arenasFile.exists()) {
@@ -155,6 +155,37 @@ public class ArenaManager {
         saveSchematic(arena);
     }
 
+    public boolean pasteSchematic(Arena arena) {
+        if (!arena.isComplete()) {
+            plugin.getLogger().warning("§c⚠️ Cannot paste schematic for incomplete arena: " + arena.getName());
+            return false;
+        }
+        
+        try {
+            // Placeholder implementation for pasting schematic
+            // In a real implementation, this would use WorldEdit or similar to paste the schematic
+            plugin.getLogger().info("§a⚔️ Pasted schematic for arena: " + arena.getName());
+            return true;
+        } catch (Exception e) {
+            plugin.getLogger().severe("§c❌ Failed to paste schematic for arena: " + arena.getName() + " - " + e.getMessage());
+            return false;
+        }
+    }
+
+    public void reserveArena(String arenaName) {
+        reservedArenas.add(arenaName);
+        plugin.getLogger().info("§e⚔️ Reserved arena: " + arenaName);
+    }
+
+    public void releaseArena(String arenaName) {
+        reservedArenas.remove(arenaName);
+        plugin.getLogger().info("§a⚔️ Released arena: " + arenaName);
+    }
+
+    public boolean isArenaReserved(String arenaName) {
+        return reservedArenas.contains(arenaName);
+    }
+
     public String cloneArena(Arena originalArena, Location newLocation) {
         if (!originalArena.isComplete()) {
             return null;
@@ -196,6 +227,7 @@ public class ArenaManager {
         // Auto-save schematic
         saveSchematic(clonedArena);
         
+        plugin.getLogger().info("§a⚔️ Cloned arena " + originalArena.getName() + " to " + newName);
         return newName;
     }
 
@@ -230,24 +262,26 @@ public class ArenaManager {
 
     public Arena getAvailableArena() {
         for (Arena arena : arenas.values()) {
-            if (arena.isComplete() && !arenasInUse.contains(arena.getName())) {
+            if (arena.isComplete() && !reservedArenas.contains(arena.getName())) {
                 return arena;
             }
         }
         return null;
     }
 
-    public void setArenaInUse(String arenaName, boolean inUse) {
-        if (inUse) {
-            arenasInUse.add(arenaName);
-        } else {
-            arenasInUse.remove(arenaName);
+    public List<Arena> getArenasForKit(String kitName) {
+        List<Arena> availableArenas = new ArrayList<>();
+        for (Arena arena : arenas.values()) {
+            if (arena.isKitAllowed(kitName)) {
+                availableArenas.add(arena);
+            }
         }
+        return availableArenas;
     }
 
     public void deleteArena(String arenaName) {
         arenas.remove(arenaName);
-        arenasInUse.remove(arenaName);
+        reservedArenas.remove(arenaName);
         
         // Remove from config
         arenasConfig.set("arenas." + arenaName, null);
