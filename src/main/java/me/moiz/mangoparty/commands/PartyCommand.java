@@ -106,6 +106,12 @@ public class PartyCommand implements CommandExecutor {
                 }
                 handleDeclineChallengeCommand(player, args[1]);
                 break;
+            case "public":
+                handleSetPublicCommand(player, true);
+                break;
+            case "private":
+                handleSetPublicCommand(player, false);
+                break;
             default:
                 sendHelpMessage(player);
                 break;
@@ -119,6 +125,8 @@ public class PartyCommand implements CommandExecutor {
         player.sendMessage("§e/party create §7- Create a new party");
         player.sendMessage("§e/party invite <player> §7- Invite a player to your party");
         player.sendMessage("§e/party join <leader> §7- Join a party");
+        player.sendMessage("§e/party public §7- Make your party public (anyone can join)");
+        player.sendMessage("§e/party private §7- Make your party private (invite only)");
         player.sendMessage("§e/party transfer <player> §7- Transfer party leadership");
         player.sendMessage("§e/party leave §7- Leave your current party");
         player.sendMessage("§e/party disband §7- Disband your party (leader only)");
@@ -198,7 +206,7 @@ public class PartyCommand implements CommandExecutor {
         
         Player leader = Bukkit.getPlayer(leaderName);
         if (leader == null) {
-            player.sendMessage("§cPlayer not found!");
+            player.sendMessage("§cPlayer not found or not online!");
             return;
         }
         
@@ -208,9 +216,15 @@ public class PartyCommand implements CommandExecutor {
             return;
         }
         
-        if (!party.hasInvite(player.getUniqueId())) {
-            player.sendMessage("§cYou don't have an invite to that party!");
+        // Check if party is public or if player has an invite
+        if (!party.isPublic() && !party.hasInvite(player.getUniqueId())) {
+            player.sendMessage("§cThis party is not open to public! You need an invite to join.");
             return;
+        }
+        
+        // If party is public, remove any pending invite for this player (if exists)
+        if (party.isPublic() && party.hasInvite(player.getUniqueId())) {
+            party.removeInvite(player.getUniqueId());
         }
         
         plugin.getPartyManager().joinParty(player, party);
@@ -359,5 +373,25 @@ public class PartyCommand implements CommandExecutor {
 
     private void handleDeclineChallengeCommand(Player player, String challengerName) {
         plugin.getPartyDuelManager().declineDuel(player, challengerName);
+    }
+
+    private void handleSetPublicCommand(Player player, boolean isPublic) {
+        Party party = plugin.getPartyManager().getParty(player);
+        if (party == null) {
+            player.sendMessage("§cYou are not in a party!");
+            return;
+        }
+
+        if (!party.isLeader(player.getUniqueId())) {
+            player.sendMessage("§cOnly the party leader can change party visibility!");
+            return;
+        }
+
+        party.setPublic(isPublic);
+        if (isPublic) {
+            player.sendMessage("§aYour party is now public! Anyone can join without an invite.");
+        } else {
+            player.sendMessage("§aYour party is now private! Only invited players can join.");
+        }
     }
 }

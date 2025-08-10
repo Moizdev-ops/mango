@@ -10,6 +10,7 @@ public class Party {
     private Set<UUID> members;
     private Map<UUID, Long> invites; // UUID -> expiration time
     private boolean inMatch;
+    private boolean isPublic;
     
     public Party(UUID leader) {
         this.leader = leader;
@@ -17,6 +18,7 @@ public class Party {
         this.invites = new HashMap<>();
         this.members.add(leader);
         this.inMatch = false;
+        this.isPublic = false;
     }
     
     public UUID getLeader() {
@@ -98,5 +100,13 @@ public class Party {
     public void disbandParty() {
         members.clear();
         invites.clear();
+    }
+
+    public boolean isPublic() {
+        return isPublic;
+    }
+
+    public void setPublic(boolean aPublic) {
+        isPublic = aPublic;
     }
 }
