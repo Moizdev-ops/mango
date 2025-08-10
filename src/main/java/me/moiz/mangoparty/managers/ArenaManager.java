@@ -262,7 +262,7 @@ public class ArenaManager {
             return;
         }
 
-        try (EditSession editSession = WorldEdit.getInstance().newEditSessionBuilder().setExtent(BukkitAdapter.adapt(Bukkit.getWorld(instanceArena.getWorld()))).build()) {
+        try (EditSession editSession = WorldEdit.getInstance().newEditSessionBuilder().setWorld(BukkitAdapter.adapt(Bukkit.getWorld(instanceArena.getWorld()))).build()) {
             BlockVector3 pasteLocation = BlockVector3.at(instanceArena.getCorner1().getX(), instanceArena.getCorner1().getY(), instanceArena.getCorner1().getZ());
             Operation operation = new ClipboardHolder(clipboard)
                     .createPaste(editSession)

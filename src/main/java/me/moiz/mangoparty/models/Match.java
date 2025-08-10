@@ -246,7 +246,7 @@ public class Match {
     }
     
     // Getters and setters
-    public String getId() { return id; }
+
     public Party getParty() { return party; }
     public Arena getArena() { return arena; }
     public void setArena(Arena arena) { this.arena = arena; }
