@@ -244,6 +244,8 @@ public class GuiManager implements Listener {
                                     meta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES);
                                     meta.addItemFlags(ItemFlag.HIDE_ENCHANTS);
                                     meta.addItemFlags(ItemFlag.HIDE_POTION_EFFECTS);
+                                    meta.addItemFlags(ItemFlag.HIDE_DYE);
+                                    meta.addItemFlags(ItemFlag.HIDE_ARMOR_TRIM);
                                 }
                                 
                                 item.setItemMeta(meta);
@@ -372,6 +374,8 @@ public class GuiManager implements Listener {
                                         meta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES);
                                         meta.addItemFlags(ItemFlag.HIDE_ENCHANTS);
                                         meta.addItemFlags(ItemFlag.HIDE_POTION_EFFECTS);
+                                        meta.addItemFlags(ItemFlag.HIDE_DYE);
+                                        meta.addItemFlags(ItemFlag.HIDE_ARMOR_TRIM);
                                     }
                                     
                                     item.setItemMeta(meta);
@@ -583,7 +587,7 @@ public class GuiManager implements Listener {
                     String kitName = kitSection.getString("kit");
                     Kit kit = plugin.getKitManager().getKit(kitName);
                     if (kit != null) {
-                        plugin.getMatchManager().startMatch(player, kit, matchType);
+                        startMatchPreparation(player, kit, matchType);
                         player.closeInventory();
                     }
                     return;
@@ -615,7 +619,7 @@ public class GuiManager implements Listener {
         }
         
         // Start the match
-        plugin.getMatchManager().startMatch(party, arena, kit, matchType);
+        plugin.getMatchManager().startMatchPreparation(party, arena, kit, matchType);
         player.sendMessage("§aStarting " + matchType + " match with kit: " + kit.getDisplayName());
     }
     
@@ -651,6 +655,8 @@ public class GuiManager implements Listener {
             meta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES);
             meta.addItemFlags(ItemFlag.HIDE_ENCHANTS);
             meta.addItemFlags(ItemFlag.HIDE_POTION_EFFECTS);
+            meta.addItemFlags(ItemFlag.HIDE_DYE);
+            meta.addItemFlags(ItemFlag.HIDE_ARMOR_TRIM);
         }
         
         item.setItemMeta(meta);
