@@ -56,8 +56,18 @@ public class MatchCountdownListener implements Listener {
         Player player = event.getPlayer();
         Match match = plugin.getMatchManager().getPlayerMatch(player);
         
-        // Allow all interactions during countdown (including crossbow loading)
-        // We don't need to restrict anything here as we want to allow inventory organization
-        // and crossbow loading during the countdown
+        // Check if player is in a match that's in preparation state
+        if (match != null && match.getState() == Match.MatchState.PREPARING) {
+            // Check if player is trying to use an ender pearl
+            ItemStack item = event.getItem();
+            if (item != null && item.getType().name().contains("ENDER_PEARL")) {
+                event.setCancelled(true);
+                player.sendMessage("§cYou cannot use ender pearls during the countdown!");
+                return;
+            }
+            
+            // Allow all other interactions during countdown (including crossbow loading)
+            // We want to allow inventory organization and crossbow loading during the countdown
+        }
     }
 }
