@@ -48,6 +48,8 @@ scoreboard:
 # Messages
 messages:
   prefix: "§6[MangoParty] §r"
+  player-only: "§cThis command can only be used by players!"
+  player-not-found: "§cPlayer not found or offline!"
   party-created: "§aParty created successfully!"
   party-disbanded: "§cParty has been disbanded!"
   invite-sent: "§aInvite sent to {player}!"
@@ -73,3 +75,27 @@ messages:
     already-in-match: "§cOne of the parties is already in a match!"
     no-available-arenas: "§cNo available arenas for the duel!"
     kit-not-found: "§cKit not found!"
+  
+  # Player Duel Messages
+  player-duel:
+    challenge-received: "§6⚔ §e{challenger} §7has challenged you to a duel! §6⚔"
+    kit-info: "§7Kit: §f{kit} §8| §7Rounds: §f{rounds} §8| §7Expires in: §c60 seconds"
+    challenge-sent: "§aDuel request sent to §e{target} §awith kit: §f{kit}, first to §f{rounds} §arounds"
+    challenge-accepted: "§aDuel accepted! Starting match with kit: §f{kit}"
+    challenge-declined: "§c{target} §7has declined your duel request."
+    challenge-expired: "§cYour duel request to §e{target} §chas expired."
+    challenge-expired-target: "§cThe duel request from §e{challenger} §chas expired."
+    no-pending-duel: "§cYou don't have any pending duel requests!"
+    duel-not-found: "§cDuel request not found or challenger is offline!"
+    already-in-match: "§cOne of the players is already in a match!"
+    already-has-request: "§c{target} already has a pending duel request!"
+    no-available-arenas: "§cNo available arenas for the duel!"
+    kit-not-found: "§cKit '{kit}' not found!"
+    round-ended: "§eRound {round} ended! Score: §a{player1} §f{score1} - {score2} §a{player2}"
+    duel-victory: "§a{winner} §7won the duel against §c{loser} §7(§e{winner_score}§7-§e{loser_score}§7)"
+    self-duel: "§cYou cannot duel yourself!"
+    invalid-rounds: "§cRounds must be between 1 and 10!"
+    usage: "§cUsage: /duel <player> <kit> <rounds>"
+    accept-usage: "§cUsage: /duelaccept <player>"
+    decline-usage: "§cUsage: /dueldecline <player>"
+    cannot-damage-other-duel: "§cYou cannot damage players in other duels!"

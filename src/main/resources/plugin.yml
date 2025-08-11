@@ -41,6 +41,26 @@ commands:
     description: Leave current queue
     usage: /leavequeue
     aliases: [lq]
+  
+  duel:
+    description: Challenge a player to a duel
+    usage: /duel <player> <kit> <rounds>
+    aliases: [d]
+  
+  duelaccept:
+    description: Accept a duel request
+    usage: /duelaccept <player>
+    aliases: [da]
+  
+  dueldecline:
+    description: Decline a duel request
+    usage: /dueldecline <player>
+    aliases: [dd]
+  
+  mangoduelcallback:
+    description: Internal command for duel callbacks
+    usage: /mangoduelcallback <action> <uuid>
+    permission: mangoparty.internal
 
 permissions:
   mangoparty.admin:
@@ -54,4 +74,7 @@ permissions:
     default: true
   mangoparty.queue:
     description: Access to queue commands
+    default: true
+  mangoparty.internal:
+    description: Access to internal commands (not for players)
     default: true

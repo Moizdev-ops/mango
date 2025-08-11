@@ -22,6 +22,7 @@ public final class MangoParty extends JavaPlugin {
     private GuiManager guiManager;
     private ConfigManager configManager;
     private PartyDuelManager partyDuelManager;
+    private DuelManager duelManager;
     private QueueManager queueManager;
     private ArenaEditorGui arenaEditorGui;
     private KitEditorGui kitEditorGui;
@@ -34,6 +35,7 @@ public final class MangoParty extends JavaPlugin {
     private SpectatorListener spectatorListener;
     private KitRulesListener kitRulesListener;
     private ArenaBoundsListener arenaBoundsListener;
+    private DuelListener duelListener;
     
     private Location spawnLocation;
     
@@ -51,6 +53,7 @@ public final class MangoParty extends JavaPlugin {
         scoreboardManager = new ScoreboardManager(this);
         guiManager = new GuiManager(this);
         partyDuelManager = new PartyDuelManager(this);
+        duelManager = new DuelManager(this);
         queueManager = new QueueManager(this);
         arenaEditorGui = new ArenaEditorGui(this);
         kitEditorGui = new KitEditorGui(this);
@@ -63,6 +66,7 @@ public final class MangoParty extends JavaPlugin {
         spectatorListener = new SpectatorListener(this);
         kitRulesListener = new KitRulesListener(this);
         arenaBoundsListener = new ArenaBoundsListener(this);
+        duelListener = new DuelListener(this);
         
         // Register listeners
         Bukkit.getPluginManager().registerEvents(playerConnectionListener, this);
@@ -71,6 +75,7 @@ public final class MangoParty extends JavaPlugin {
         Bukkit.getPluginManager().registerEvents(spectatorListener, this);
         Bukkit.getPluginManager().registerEvents(kitRulesListener, this);
         Bukkit.getPluginManager().registerEvents(arenaBoundsListener, this);
+        Bukkit.getPluginManager().registerEvents(duelListener, this);
         
         // Register commands
         registerCommands();
@@ -95,6 +100,9 @@ public final class MangoParty extends JavaPlugin {
         }
         if (partyDuelManager != null) {
             partyDuelManager.cleanup();
+        }
+        if (duelManager != null) {
+            duelManager.cleanup();
         }
         
         getLogger().info("MangoParty has been disabled!");
@@ -124,6 +132,18 @@ public final class MangoParty extends JavaPlugin {
         getCommand("2v2queue").setTabCompleter(new QueueTabCompleter());
         getCommand("3v3queue").setTabCompleter(new QueueTabCompleter());
         getCommand("leavequeue").setTabCompleter(new QueueTabCompleter());
+        
+        // Duel commands
+        getCommand("duel").setExecutor(new DuelCommand(this));
+        getCommand("duel").setTabCompleter(new DuelCommand(this));
+        getCommand("duelaccept").setExecutor(new DuelAcceptCommand(this));
+        getCommand("duelaccept").setTabCompleter(new DuelAcceptCommand(this));
+        getCommand("dueldecline").setExecutor(new DuelDeclineCommand(this));
+        getCommand("dueldecline").setTabCompleter(new DuelDeclineCommand(this));
+        
+        // Duel callback command (internal)
+        getCommand("mangoduelcallback").setExecutor(new MangoDuelCallbackCommand(this));
+        getCommand("mangoduelcallback").setTabCompleter(new MangoDuelCallbackCommand(this));
     }
     
     private void loadSpawnLocation() {
@@ -165,6 +185,7 @@ public final class MangoParty extends JavaPlugin {
     public GuiManager getGuiManager() { return guiManager; }
     public ConfigManager getConfigManager() { return configManager; }
     public PartyDuelManager getPartyDuelManager() { return partyDuelManager; }
+    public DuelManager getDuelManager() { return duelManager; }
     public QueueManager getQueueManager() { return queueManager; }
     public ArenaEditorGui getArenaEditorGui() { return arenaEditorGui; }
     public KitEditorGui getKitEditorGui() { return kitEditorGui; }
