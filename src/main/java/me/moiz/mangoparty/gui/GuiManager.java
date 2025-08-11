@@ -3,6 +3,7 @@ package me.moiz.mangoparty.gui;
 import me.moiz.mangoparty.MangoParty;
 import me.moiz.mangoparty.models.Kit;
 import me.moiz.mangoparty.models.Party;
+import me.moiz.mangoparty.utils.HexUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.configuration.ConfigurationSection;
@@ -12,6 +13,7 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.inventory.Inventory;
+import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.inventory.meta.SkullMeta;
@@ -199,17 +201,55 @@ public class GuiManager implements Listener {
                         int slot = kitSection.getInt("slot");
                         String displayName = kitSection.getString("name", kit.getDisplayName());
                         List<String> lore = kitSection.getStringList("lore");
+                        boolean hideAttributes = kitSection.getBoolean("hideAttributes", false);
+                        Integer customModelData = kitSection.contains("customModelData") ? 
+                                                kitSection.getInt("customModelData") : null;
                         
-                        ItemStack item = kit.getIcon() != null ? kit.getIcon().clone() : new ItemStack(Material.IRON_SWORD);
-                        ItemMeta meta = item.getItemMeta();
-                        meta.setDisplayName(displayName);
-                        meta.setLore(lore);
-                        
-                        if (kitSection.contains("customModelData")) {
-                            meta.setCustomModelData(kitSection.getInt("customModelData"));
+                        // Use material from config if available, otherwise use kit's icon or default
+                        ItemStack item;
+                        if (kitSection.contains("material")) {
+                            String materialName = kitSection.getString("material");
+                            Material material = Material.getMaterial(materialName);
+                            if (material != null) {
+                                item = createItem(material, displayName, lore, hideAttributes, customModelData);
+                            } else {
+                                // Fallback to kit icon or default
+                                item = kit.getIcon() != null ? kit.getIcon().clone() : 
+                                       createItem(Material.IRON_SWORD, displayName, lore, hideAttributes, customModelData);
+                            }
+                        } else {
+                            // Use kit icon or default
+                            item = kit.getIcon() != null ? kit.getIcon().clone() : 
+                                   createItem(Material.IRON_SWORD, displayName, lore, hideAttributes, customModelData);
+                            
+                            // If using kit icon, still apply our display name, lore, and other properties
+                            if (kit.getIcon() != null) {
+                                ItemMeta meta = item.getItemMeta();
+                                meta.setDisplayName(HexUtils.colorize(displayName));
+                                
+                                // Apply color codes to lore
+                                if (lore != null && !lore.isEmpty()) {
+                                    List<String> colorizedLore = new ArrayList<>();
+                                    for (String line : lore) {
+                                        colorizedLore.add(HexUtils.colorize(line));
+                                    }
+                                    meta.setLore(colorizedLore);
+                                }
+                                
+                                if (customModelData != null) {
+                                    meta.setCustomModelData(customModelData);
+                                }
+                                
+                                if (hideAttributes) {
+                                    meta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES);
+                                    meta.addItemFlags(ItemFlag.HIDE_ENCHANTS);
+                                    meta.addItemFlags(ItemFlag.HIDE_POTION_EFFECTS);
+                                }
+                                
+                                item.setItemMeta(meta);
+                            }
                         }
                         
-                        item.setItemMeta(meta);
                         gui.setItem(slot, item);
                     } else {
                         plugin.getLogger().warning("Kit '" + kitName + "' defined in " + matchType + ".yml but not found in KitManager.");
@@ -243,6 +283,9 @@ public class GuiManager implements Listener {
                         String materialName = kitSection.getString("material", "IRON_SWORD");
                         String displayName = kitSection.getString("name", kit.getDisplayName());
                         List<String> lore = new ArrayList<>(kitSection.getStringList("lore"));
+                        boolean hideAttributes = kitSection.getBoolean("hideAttributes", false);
+                        Integer customModelData = kitSection.contains("customModelData") ? 
+                                                kitSection.getInt("customModelData") : null;
                         
                         // Replace {queued} placeholder
                         int queueCount = plugin.getQueueManager().getQueueCount(mode, kitName);
@@ -250,18 +293,16 @@ public class GuiManager implements Listener {
                             lore.set(i, lore.get(i).replace("{queued}", String.valueOf(queueCount)));
                         }
                         
-                        Material material = Material.valueOf(materialName);
-                        ItemStack item = new ItemStack(material);
-                        ItemMeta meta = item.getItemMeta();
-                        meta.setDisplayName(displayName);
-                        meta.setLore(lore);
-                        
-                        if (kitSection.contains("customModelData")) {
-                            meta.setCustomModelData(kitSection.getInt("customModelData"));
+                        try {
+                            Material material = Material.valueOf(materialName);
+                            ItemStack item = createItem(material, displayName, lore, hideAttributes, customModelData);
+                            gui.setItem(slot, item);
+                        } catch (IllegalArgumentException e) {
+                            // Fallback to default material if the specified one is invalid
+                            plugin.getLogger().warning("Invalid material '" + materialName + "' for kit '" + kitName + "' in " + mode + "kits.yml");
+                            ItemStack item = createItem(Material.IRON_SWORD, displayName, lore, hideAttributes, customModelData);
+                            gui.setItem(slot, item);
                         }
-                        
-                        item.setItemMeta(meta);
-                        gui.setItem(slot, item);
                     }
                 }
             }
@@ -291,19 +332,82 @@ public class GuiManager implements Listener {
                         int slot = kitSection.getInt("slot");
                         String displayName = kitSection.getString("name", kit.getDisplayName());
                         List<String> lore = new ArrayList<>(kitSection.getStringList("lore"));
+                        boolean hideAttributes = kitSection.getBoolean("hideAttributes", false);
+                        Integer customModelData = kitSection.contains("customModelData") ? 
+                                                kitSection.getInt("customModelData") : null;
+                        
+                        // Add challenge info to lore
                         lore.add("§7");
                         lore.add("§eClick to challenge with this kit!");
                         
-                        ItemStack item = kit.getIcon() != null ? kit.getIcon().clone() : new ItemStack(Material.IRON_SWORD);
-                        ItemMeta meta = item.getItemMeta();
-                        meta.setDisplayName(displayName);
-                        meta.setLore(lore);
-                        
-                        if (kitSection.contains("customModelData")) {
-                            meta.setCustomModelData(kitSection.getInt("customModelData"));
+                        // Use material from config if available, otherwise use kit's icon or default
+                        ItemStack item;
+                        if (kitSection.contains("material")) {
+                            String materialName = kitSection.getString("material");
+                            try {
+                                Material material = Material.valueOf(materialName);
+                                item = createItem(material, displayName, lore, hideAttributes, customModelData);
+                            } catch (IllegalArgumentException e) {
+                                // Fallback to kit icon or default
+                                item = kit.getIcon() != null ? kit.getIcon().clone() : 
+                                       createItem(Material.IRON_SWORD, displayName, lore, hideAttributes, customModelData);
+                                
+                                // Apply our properties to the kit icon if used
+                                if (kit.getIcon() != null) {
+                                    ItemMeta meta = item.getItemMeta();
+                                    meta.setDisplayName(HexUtils.colorize(displayName));
+                                    
+                                    // Apply color codes to lore
+                                    List<String> colorizedLore = new ArrayList<>();
+                                    for (String line : lore) {
+                                        colorizedLore.add(HexUtils.colorize(line));
+                                    }
+                                    meta.setLore(colorizedLore);
+                                    
+                                    if (customModelData != null) {
+                                        meta.setCustomModelData(customModelData);
+                                    }
+                                    
+                                    if (hideAttributes) {
+                                        meta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES);
+                                        meta.addItemFlags(ItemFlag.HIDE_ENCHANTS);
+                                        meta.addItemFlags(ItemFlag.HIDE_POTION_EFFECTS);
+                                    }
+                                    
+                                    item.setItemMeta(meta);
+                                }
+                            }
+                        } else {
+                            // Use kit icon or default
+                            item = kit.getIcon() != null ? kit.getIcon().clone() : 
+                                   createItem(Material.IRON_SWORD, displayName, lore, hideAttributes, customModelData);
+                            
+                            // Apply our properties to the kit icon if used
+                            if (kit.getIcon() != null) {
+                                ItemMeta meta = item.getItemMeta();
+                                meta.setDisplayName(HexUtils.colorize(displayName));
+                                
+                                // Apply color codes to lore
+                                List<String> colorizedLore = new ArrayList<>();
+                                for (String line : lore) {
+                                    colorizedLore.add(HexUtils.colorize(line));
+                                }
+                                meta.setLore(colorizedLore);
+                                
+                                if (customModelData != null) {
+                                    meta.setCustomModelData(customModelData);
+                                }
+                                
+                                if (hideAttributes) {
+                                    meta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES);
+                                    meta.addItemFlags(ItemFlag.HIDE_ENCHANTS);
+                                    meta.addItemFlags(ItemFlag.HIDE_POTION_EFFECTS);
+                                }
+                                
+                                item.setItemMeta(meta);
+                            }
                         }
                         
-                        item.setItemMeta(meta);
                         gui.setItem(slot, item);
                     }
                 }
@@ -479,7 +583,7 @@ public class GuiManager implements Listener {
                     String kitName = kitSection.getString("kit");
                     Kit kit = plugin.getKitManager().getKit(kitName);
                     if (kit != null) {
-                        plugin.getMatchManager().startMatchPreparation(player, kit, matchType);
+                        plugin.getMatchManager().startMatch(player, kit, matchType);
                         player.closeInventory();
                     }
                     return;
@@ -513,5 +617,43 @@ public class GuiManager implements Listener {
         // Start the match
         plugin.getMatchManager().startMatch(party, arena, kit, matchType);
         player.sendMessage("§aStarting " + matchType + " match with kit: " + kit.getDisplayName());
+    }
+    
+    private ItemStack createItem(Material material, String displayName, List<String> lore) {
+        return createItem(material, displayName, lore, false, null);
+    }
+    
+    private ItemStack createItem(Material material, String displayName, List<String> lore, boolean hideAttributes, Integer customModelData) {
+        ItemStack item = new ItemStack(material);
+        ItemMeta meta = item.getItemMeta();
+        
+        // Apply color codes to display name
+        if (displayName != null) {
+            meta.setDisplayName(HexUtils.colorize(displayName));
+        }
+        
+        // Apply color codes to lore
+        if (lore != null && !lore.isEmpty()) {
+            List<String> colorizedLore = new ArrayList<>();
+            for (String line : lore) {
+                colorizedLore.add(HexUtils.colorize(line));
+            }
+            meta.setLore(colorizedLore);
+        }
+        
+        // Set custom model data if provided
+        if (customModelData != null) {
+            meta.setCustomModelData(customModelData);
+        }
+        
+        // Hide attributes if requested
+        if (hideAttributes) {
+            meta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES);
+            meta.addItemFlags(ItemFlag.HIDE_ENCHANTS);
+            meta.addItemFlags(ItemFlag.HIDE_POTION_EFFECTS);
+        }
+        
+        item.setItemMeta(meta);
+        return item;
     }
 }

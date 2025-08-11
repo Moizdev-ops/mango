@@ -117,6 +117,7 @@ public class MangoCommand implements CommandExecutor {
         player.sendMessage("§e/mango arena delete <name> §7- Delete an arena");
         player.sendMessage("§e/mango create kit <name> §7- Create kit from inventory");
         player.sendMessage("§e/mango addkitgui <kit_name> <match_type> [slot] §7- Add a kit to a GUI");
+        player.sendMessage("§e/mango editkitgui <kit> <mode> <property> <value> §7- Edit kit properties in GUI");
         player.sendMessage("§e/mango setspawn §7- Set the server spawn location");
     }
     
@@ -369,6 +370,144 @@ public class MangoCommand implements CommandExecutor {
             plugin.getGuiManager().reloadGuiConfigs(); // Reload GUI to reflect changes
         } else {
             player.sendMessage("§cFailed to add kit '" + kitName + "' to " + matchType.toUpperCase() + " GUI. It might already be there or an invalid slot was provided.");
+        }
+    }
+    
+    private void handleEditKitGuiCommand(Player player, String[] args) {
+        if (args.length < 5) {
+            player.sendMessage("§cUsage: /mango editkitgui <kit> <mode> <property> <value>");
+            player.sendMessage("§cProperties: material, name, lore, hideattributes");
+            return;
+        }
+        
+        String kitName = args[1];
+        String mode = args[2].toLowerCase();
+        String property = args[3].toLowerCase();
+        String value = String.join(" ", java.util.Arrays.copyOfRange(args, 4, args.length));
+        
+        Kit kit = plugin.getKitManager().getKit(kitName);
+        if (kit == null) {
+            player.sendMessage("§cKit '" + kitName + "' not found!");
+            return;
+        }
+        
+        boolean isQueueMode = mode.equals("1v1") || mode.equals("2v2") || mode.equals("3v3");
+        boolean isRegularMode = mode.equals("split") || mode.equals("ffa");
+        
+        if (!isQueueMode && !isRegularMode) {
+            player.sendMessage("§cInvalid mode. Must be 'split', 'ffa', '1v1', '2v2', or '3v3'.");
+            return;
+        }
+        
+        boolean success = false;
+        
+        switch (property) {
+            case "material":
+                try {
+                    org.bukkit.Material material = org.bukkit.Material.valueOf(value.toUpperCase());
+                    success = plugin.getConfigManager().updateKitMaterial(kit, mode, material.toString());
+                } catch (IllegalArgumentException e) {
+                    player.sendMessage("§cInvalid material: " + value);
+                    return;
+                }
+                break;
+                
+            case "name":
+                // Process color codes in the name
+                String colorizedName = me.moiz.mangoparty.utils.HexUtils.colorize(value);
+                success = plugin.getConfigManager().updateKitName(kit, mode, colorizedName);
+                break;
+                
+            case "lore":
+                // Process color codes in the lore
+                String colorizedLore = me.moiz.mangoparty.utils.HexUtils.colorize(value);
+                success = plugin.getConfigManager().updateKitLore(kit, mode, colorizedLore);
+                break;
+                
+            case "hideattributes":
+                boolean hide = Boolean.parseBoolean(value);
+                success = plugin.getConfigManager().updateKitHideAttributes(kit, mode, hide);
+                break;
+                
+            default:
+                player.sendMessage("§cInvalid property. Must be 'material', 'name', 'lore', or 'hideattributes'.");
+                return;
+        }
+        
+        if (success) {
+            player.sendMessage("§aUpdated " + property + " for kit '" + kitName + "' in " + mode.toUpperCase() + " GUI!");
+            plugin.getGuiManager().reloadGuiConfigs();
+        } else {
+            player.sendMessage("§cFailed to update " + property + " for kit '" + kitName + "' in " + mode.toUpperCase() + " GUI.");
+        }
+    }
+    
+    private void handleEditKitGuiCommand(Player player, String[] args) {
+        if (args.length < 5) {
+            player.sendMessage("§cUsage: /mango editkitgui <kit> <mode> <property> <value>");
+            player.sendMessage("§cProperties: material, name, lore, hideattributes");
+            return;
+        }
+        
+        String kitName = args[1];
+        String mode = args[2].toLowerCase();
+        String property = args[3].toLowerCase();
+        String value = String.join(" ", java.util.Arrays.copyOfRange(args, 4, args.length));
+        
+        Kit kit = plugin.getKitManager().getKit(kitName);
+        if (kit == null) {
+            player.sendMessage("§cKit '" + kitName + "' not found!");
+            return;
+        }
+        
+        boolean isQueueMode = mode.equals("1v1") || mode.equals("2v2") || mode.equals("3v3");
+        boolean isRegularMode = mode.equals("split") || mode.equals("ffa");
+        
+        if (!isQueueMode && !isRegularMode) {
+            player.sendMessage("§cInvalid mode. Must be 'split', 'ffa', '1v1', '2v2', or '3v3'.");
+            return;
+        }
+        
+        boolean success = false;
+        
+        switch (property) {
+            case "material":
+                try {
+                    org.bukkit.Material material = org.bukkit.Material.valueOf(value.toUpperCase());
+                    success = plugin.getConfigManager().updateKitMaterial(kit, mode, material.toString());
+                } catch (IllegalArgumentException e) {
+                    player.sendMessage("§cInvalid material: " + value);
+                    return;
+                }
+                break;
+                
+            case "name":
+                // Process color codes in the name
+                String colorizedName = me.moiz.mangoparty.utils.HexUtils.colorize(value);
+                success = plugin.getConfigManager().updateKitName(kit, mode, colorizedName);
+                break;
+                
+            case "lore":
+                // Process color codes in the lore
+                String colorizedLore = me.moiz.mangoparty.utils.HexUtils.colorize(value);
+                success = plugin.getConfigManager().updateKitLore(kit, mode, colorizedLore);
+                break;
+                
+            case "hideattributes":
+                boolean hide = Boolean.parseBoolean(value);
+                success = plugin.getConfigManager().updateKitHideAttributes(kit, mode, hide);
+                break;
+                
+            default:
+                player.sendMessage("§cInvalid property. Must be 'material', 'name', 'lore', or 'hideattributes'.");
+                return;
+        }
+        
+        if (success) {
+            player.sendMessage("§aUpdated " + property + " for kit '" + kitName + "' in " + mode.toUpperCase() + " GUI!");
+            plugin.getGuiManager().reloadGuiConfigs();
+        } else {
+            player.sendMessage("§cFailed to update " + property + " for kit '" + kitName + "' in " + mode.toUpperCase() + " GUI.");
         }
     }
 

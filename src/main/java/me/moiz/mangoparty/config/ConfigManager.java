@@ -138,22 +138,22 @@ public class ConfigManager {
         }
 
         if (!guiFile.exists()) {
-            plugin.getLogger().warning("GUI config file not found: " + guiFile.getName());
-            return false;
+            // Create default config
+            guiConfig = new YamlConfiguration();
+            guiConfig.set("title", "§6Select Kit - " + matchType.toUpperCase());
+            guiConfig.set("size", 27);
+            guiConfig.createSection("kits");
+            try {
+                guiConfig.save(guiFile);
+            } catch (IOException e) {
+                plugin.getLogger().severe("Failed to create " + guiFile.getName() + ": " + e.getMessage());
+                return false;
+            }
         }
 
         guiConfig = YamlConfiguration.loadConfiguration(guiFile);
-
-        // Check if kit already exists in this GUI config
         ConfigurationSection kitsSection = guiConfig.getConfigurationSection("kits");
-        if (kitsSection != null) {
-            for (String key : kitsSection.getKeys(false)) {
-                if (kitsSection.getString(key + ".kit", "").equalsIgnoreCase(kit.getName())) {
-                    plugin.getLogger().info("Kit " + kit.getName() + " already exists in " + matchType + " GUI.");
-                    return false; // Kit already exists
-                }
-            }
-        } else {
+        if (kitsSection == null) {
             kitsSection = guiConfig.createSection("kits");
         }
 
@@ -190,7 +190,7 @@ public class ConfigManager {
         // Add kit details to config
         String kitConfigKey = kit.getName().toLowerCase().replace(" ", "_"); // Sanitize key
         kitsSection.set(kitConfigKey + ".slot", slot);
-        kitsSection.set(kitConfigKey + ".name", kit.getDisplayName());
+        kitsSection.set(kitConfigKey + ".name", "§c§l" + kit.getName());
         kitsSection.set(kitConfigKey + ".kit", kit.getName());
         
         // Default lore if none exists
@@ -222,7 +222,7 @@ public class ConfigManager {
             guiConfig = new YamlConfiguration();
             guiConfig.set("title", "§6" + mode.toUpperCase() + " Kit Selection");
             guiConfig.set("size", 27);
-            guiConfig.set("kits", "");
+            guiConfig.createSection("kits");
             
             try {
                 guiConfig.save(guiFile);
@@ -233,15 +233,8 @@ public class ConfigManager {
         }
 
         guiConfig = YamlConfiguration.loadConfiguration(guiFile);
-
-        // Check if kit already exists in this GUI config
         ConfigurationSection kitsSection = guiConfig.getConfigurationSection("kits");
-        if (kitsSection != null) {
-            if (kitsSection.contains(kit.getName())) {
-                plugin.getLogger().info("Kit " + kit.getName() + " already exists in " + mode + " queue GUI.");
-                return false; // Kit already exists
-            }
-        } else {
+        if (kitsSection == null) {
             kitsSection = guiConfig.createSection("kits");
         }
 
@@ -279,7 +272,7 @@ public class ConfigManager {
         String kitConfigKey = kit.getName();
         kitsSection.set(kitConfigKey + ".slot", slot);
         kitsSection.set(kitConfigKey + ".material", kit.getIcon() != null ? kit.getIcon().getType().toString() : "IRON_SWORD");
-        kitsSection.set(kitConfigKey + ".name", kit.getDisplayName());
+        kitsSection.set(kitConfigKey + ".name", "§c§l" + kit.getName());
         
         // Default lore with queue placeholder
         List<String> defaultLore = new ArrayList<>();
@@ -388,6 +381,249 @@ public class ConfigManager {
         updateKitIconInQueueGuiConfig(kit, "1v1", materialName, customModelData);
         updateKitIconInQueueGuiConfig(kit, "2v2", materialName, customModelData);
         updateKitIconInQueueGuiConfig(kit, "3v3", materialName, customModelData);
+    }
+    
+    public boolean updateKitMaterial(Kit kit, String mode, String material) {
+        if (mode.equals("1v1") || mode.equals("2v2") || mode.equals("3v3")) {
+            return updateKitMaterialInQueueGuiConfig(kit.getName(), mode, material);
+        } else {
+            return updateKitMaterialInGuiConfig(kit.getName(), mode, material);
+        }
+    }
+    
+    public boolean updateKitName(Kit kit, String mode, String displayName) {
+        if (mode.equals("1v1") || mode.equals("2v2") || mode.equals("3v3")) {
+            return updateKitNameInQueueGuiConfig(kit.getName(), mode, displayName);
+        } else {
+            return updateKitNameInGuiConfig(kit.getName(), mode, displayName);
+        }
+    }
+    
+    public boolean updateKitLore(Kit kit, String mode, String lore) {
+        if (mode.equals("1v1") || mode.equals("2v2") || mode.equals("3v3")) {
+            return updateKitLoreInQueueGuiConfig(kit.getName(), mode, lore);
+        } else {
+            return updateKitLoreInGuiConfig(kit.getName(), mode, lore);
+        }
+    }
+    
+    public boolean updateKitHideAttributes(Kit kit, String mode, boolean hideAttributes) {
+        if (mode.equals("1v1") || mode.equals("2v2") || mode.equals("3v3")) {
+            return updateKitHideAttributesInQueueGuiConfig(kit.getName(), mode, hideAttributes);
+        } else {
+            return updateKitHideAttributesInGuiConfig(kit.getName(), mode, hideAttributes);
+        }
+    }
+    
+    private boolean updateKitMaterialInGuiConfig(String kitName, String matchType, String material) {
+        File guiDir = new File(plugin.getDataFolder(), "gui");
+        File guiFile = new File(guiDir, matchType + ".yml");
+        
+        if (!guiFile.exists()) return false;
+        
+        YamlConfiguration guiConfig = YamlConfiguration.loadConfiguration(guiFile);
+        ConfigurationSection kitsSection = guiConfig.getConfigurationSection("kits");
+        
+        if (kitsSection != null) {
+            for (String key : kitsSection.getKeys(false)) {
+                if (kitsSection.getString(key + ".kit", "").equalsIgnoreCase(kitName)) {
+                    // Set the material for the kit in the GUI config
+                    kitsSection.set(key + ".material", material);
+                    
+                    try {
+                        guiConfig.save(guiFile);
+                        return true;
+                    } catch (IOException e) {
+                        plugin.getLogger().severe("Failed to update material in " + guiFile.getName() + ": " + e.getMessage());
+                        return false;
+                    }
+                }
+            }
+        }
+        return false;
+    }
+    
+    private boolean updateKitMaterialInQueueGuiConfig(String kitName, String mode, String material) {
+        File guiDir = new File(plugin.getDataFolder(), "gui");
+        File guiFile = new File(guiDir, mode + "kits.yml");
+        
+        if (!guiFile.exists()) return false;
+        
+        YamlConfiguration guiConfig = YamlConfiguration.loadConfiguration(guiFile);
+        ConfigurationSection kitsSection = guiConfig.getConfigurationSection("kits");
+        
+        if (kitsSection != null && kitsSection.contains(kitName)) {
+            kitsSection.set(kitName + ".material", material);
+            
+            try {
+                guiConfig.save(guiFile);
+                return true;
+            } catch (IOException e) {
+                plugin.getLogger().severe("Failed to update material in " + guiFile.getName() + ": " + e.getMessage());
+                return false;
+            }
+        }
+        return false;
+    }
+    
+    private boolean updateKitNameInGuiConfig(String kitName, String matchType, String displayName) {
+        File guiDir = new File(plugin.getDataFolder(), "gui");
+        File guiFile = new File(guiDir, matchType + ".yml");
+        
+        if (!guiFile.exists()) return false;
+        
+        YamlConfiguration guiConfig = YamlConfiguration.loadConfiguration(guiFile);
+        ConfigurationSection kitsSection = guiConfig.getConfigurationSection("kits");
+        
+        if (kitsSection != null) {
+            for (String key : kitsSection.getKeys(false)) {
+                if (kitsSection.getString(key + ".kit", "").equalsIgnoreCase(kitName)) {
+                    kitsSection.set(key + ".name", displayName);
+                    
+                    try {
+                        guiConfig.save(guiFile);
+                        return true;
+                    } catch (IOException e) {
+                        plugin.getLogger().severe("Failed to update name in " + guiFile.getName() + ": " + e.getMessage());
+                        return false;
+                    }
+                }
+            }
+        }
+        return false;
+    }
+    
+    private boolean updateKitNameInQueueGuiConfig(String kitName, String mode, String displayName) {
+        File guiDir = new File(plugin.getDataFolder(), "gui");
+        File guiFile = new File(guiDir, mode + "kits.yml");
+        
+        if (!guiFile.exists()) return false;
+        
+        YamlConfiguration guiConfig = YamlConfiguration.loadConfiguration(guiFile);
+        ConfigurationSection kitsSection = guiConfig.getConfigurationSection("kits");
+        
+        if (kitsSection != null && kitsSection.contains(kitName)) {
+            kitsSection.set(kitName + ".name", displayName);
+            
+            try {
+                guiConfig.save(guiFile);
+                return true;
+            } catch (IOException e) {
+                plugin.getLogger().severe("Failed to update name in " + guiFile.getName() + ": " + e.getMessage());
+                return false;
+            }
+        }
+        return false;
+    }
+    
+    private boolean updateKitLoreInGuiConfig(String kitName, String matchType, String lore) {
+        File guiDir = new File(plugin.getDataFolder(), "gui");
+        File guiFile = new File(guiDir, matchType + ".yml");
+        
+        if (!guiFile.exists()) return false;
+        
+        YamlConfiguration guiConfig = YamlConfiguration.loadConfiguration(guiFile);
+        ConfigurationSection kitsSection = guiConfig.getConfigurationSection("kits");
+        
+        if (kitsSection != null) {
+            for (String key : kitsSection.getKeys(false)) {
+                if (kitsSection.getString(key + ".kit", "").equalsIgnoreCase(kitName)) {
+                    List<String> loreList = new ArrayList<>();
+                    for (String line : lore.split("\\n")) {
+                        loreList.add(line);
+                    }
+                    kitsSection.set(key + ".lore", loreList);
+                    
+                    try {
+                        guiConfig.save(guiFile);
+                        return true;
+                    } catch (IOException e) {
+                        plugin.getLogger().severe("Failed to update lore in " + guiFile.getName() + ": " + e.getMessage());
+                        return false;
+                    }
+                }
+            }
+        }
+        return false;
+    }
+    
+    private boolean updateKitLoreInQueueGuiConfig(String kitName, String mode, String lore) {
+        File guiDir = new File(plugin.getDataFolder(), "gui");
+        File guiFile = new File(guiDir, mode + "kits.yml");
+        
+        if (!guiFile.exists()) return false;
+        
+        YamlConfiguration guiConfig = YamlConfiguration.loadConfiguration(guiFile);
+        ConfigurationSection kitsSection = guiConfig.getConfigurationSection("kits");
+        
+        if (kitsSection != null && kitsSection.contains(kitName)) {
+            List<String> loreList = new ArrayList<>();
+            for (String line : lore.split("\\n")) {
+                loreList.add(line);
+            }
+            // Always add the queue placeholder as the last line
+            loreList.add("§eQueued: {queued}");
+            kitsSection.set(kitName + ".lore", loreList);
+            
+            try {
+                guiConfig.save(guiFile);
+                return true;
+            } catch (IOException e) {
+                plugin.getLogger().severe("Failed to update lore in " + guiFile.getName() + ": " + e.getMessage());
+                return false;
+            }
+        }
+        return false;
+    }
+    
+    private boolean updateKitHideAttributesInGuiConfig(String kitName, String matchType, boolean hideAttributes) {
+        File guiDir = new File(plugin.getDataFolder(), "gui");
+        File guiFile = new File(guiDir, matchType + ".yml");
+        
+        if (!guiFile.exists()) return false;
+        
+        YamlConfiguration guiConfig = YamlConfiguration.loadConfiguration(guiFile);
+        ConfigurationSection kitsSection = guiConfig.getConfigurationSection("kits");
+        
+        if (kitsSection != null) {
+            for (String key : kitsSection.getKeys(false)) {
+                if (kitsSection.getString(key + ".kit", "").equalsIgnoreCase(kitName)) {
+                    kitsSection.set(key + ".hideAttributes", hideAttributes);
+                    
+                    try {
+                        guiConfig.save(guiFile);
+                        return true;
+                    } catch (IOException e) {
+                        plugin.getLogger().severe("Failed to update hideAttributes in " + guiFile.getName() + ": " + e.getMessage());
+                        return false;
+                    }
+                }
+            }
+        }
+        return false;
+    }
+    
+    private boolean updateKitHideAttributesInQueueGuiConfig(String kitName, String mode, boolean hideAttributes) {
+        File guiDir = new File(plugin.getDataFolder(), "gui");
+        File guiFile = new File(guiDir, mode + "kits.yml");
+        
+        if (!guiFile.exists()) return false;
+        
+        YamlConfiguration guiConfig = YamlConfiguration.loadConfiguration(guiFile);
+        ConfigurationSection kitsSection = guiConfig.getConfigurationSection("kits");
+        
+        if (kitsSection != null && kitsSection.contains(kitName)) {
+            kitsSection.set(kitName + ".hideAttributes", hideAttributes);
+            
+            try {
+                guiConfig.save(guiFile);
+                return true;
+            } catch (IOException e) {
+                plugin.getLogger().severe("Failed to update hideAttributes in " + guiFile.getName() + ": " + e.getMessage());
+                return false;
+            }
+        }
+        return false;
     }
 
     private void updateKitIconInGuiConfig(Kit kit, String matchType, String materialName, Integer customModelData) {
