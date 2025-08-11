@@ -14,13 +14,39 @@ import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.scheduler.BukkitRunnable;
 
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
+
 public class DuelListener implements Listener {
     private final MangoParty plugin;
     private final DuelManager duelManager;
     
+    // Map to store player death locations with exact yaw/pitch preserved
+    // This map is accessed by PlayerRespawnListener to set exact respawn locations
+    private final Map<UUID, Location> deathLocations = new HashMap<>();
+    
     public DuelListener(MangoParty plugin) {
         this.plugin = plugin;
         this.duelManager = plugin.getDuelManager();
+    }
+    
+    /**
+     * Get the stored death location for a player
+     * @param playerId UUID of the player
+     * @return Location where the player died, or null if not found
+     */
+    public Location getDeathLocation(UUID playerId) {
+        return deathLocations.get(playerId);
+    }
+    
+    /**
+     * Remove a player's death location from storage
+     * @param playerId UUID of the player
+     * @return The removed location, or null if not found
+     */
+    public Location removeDeathLocation(UUID playerId) {
+        return deathLocations.remove(playerId);
     }
     
     /**
@@ -36,11 +62,18 @@ public class DuelListener implements Listener {
         
         // Check if player is in a duel and would die from this damage
         if (duelManager.isInDuel(player) && player.getHealth() - event.getFinalDamage() <= 0) {
-            // Cancel the damage event to prevent death
-            event.setCancelled(true);
+            // We'll let the player actually die to get death animation/effects
+            // This will trigger the PlayerDeathEvent which will handle respawn location
             
-            // Handle the death manually
-            handleCustomDuelDeath(player);
+            // If immediate respawn is enabled, we need to handle it here
+            if (player.getWorld().getGameRuleValue("doImmediateRespawn").equalsIgnoreCase("true")) {
+                // Cancel the damage event to prevent death
+                event.setCancelled(true);
+                
+                // Handle the death manually
+                handleCustomDuelDeath(player);
+            }
+            // Otherwise let the natural death occur and PlayerDeathEvent will handle it
         }
     }
     
@@ -48,8 +81,13 @@ public class DuelListener implements Listener {
      * Custom method to handle player deaths in duels without triggering the vanilla death event
      */
     private void handleCustomDuelDeath(Player player) {
-        // Store death location
+        // Store death location with exact yaw/pitch preserved
         final Location deathLocation = player.getLocation().clone();
+        // Slightly raise Y coordinate to avoid spawning inside blocks
+        deathLocation.setY(deathLocation.getY() + 0.1);
+        
+        // Store location for respawn
+        deathLocations.put(player.getUniqueId(), deathLocation);
         
         // Handle duel death
         duelManager.handlePlayerDeath(player);
@@ -75,17 +113,23 @@ public class DuelListener implements Listener {
         
         // Check if player is in a duel
         if (duelManager.isInDuel(player)) {
+            // Store exact death location with yaw/pitch preserved
+            Location deathLoc = player.getLocation().clone();
+            // Slightly raise Y coordinate to avoid spawning inside blocks
+            deathLoc.setY(deathLoc.getY() + 0.1);
+            deathLocations.put(player.getUniqueId(), deathLoc);
+            
             // Prevent drops and exp loss
             event.setKeepInventory(true);
             event.setKeepLevel(true);
             event.getDrops().clear();
             event.setDroppedExp(0);
             
-            // Cancel the death event to prevent respawn
-            player.setHealth(20.0);
+            // Let the death animation play out naturally
+            // We won't cancel the death event to allow death animation/effects
             
             // Handle the death manually (this is a backup in case the damage event handler fails)
-            handleCustomDuelDeath(player);
+            duelManager.handlePlayerDeath(player);
         }
     }
     

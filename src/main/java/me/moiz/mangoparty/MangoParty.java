@@ -194,6 +194,10 @@ public final class MangoParty extends JavaPlugin {
         return playerDeathListener;
     }
     
+    public DuelListener getDuelListener() {
+        return duelListener;
+    }
+    
     public MatchCountdownListener getMatchCountdownListener() {
         return matchCountdownListener;
     }
