@@ -203,12 +203,7 @@ public class ScoreboardManager {
     /**
      * Remove a player's scoreboard
      */
-    public void removeScoreboard(Player player) {
-        FastBoard board = scoreboards.remove(player.getUniqueId());
-        if (board != null) {
-            board.delete();
-        }
-    }
+    // Method moved to avoid duplication
     
     /**
      * Update match scoreboards with the specified configuration section
