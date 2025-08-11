@@ -73,31 +73,32 @@ public class PlayerDeathListener implements Listener {
             saveInventory(killer);
         }
         
-        // Instant teleport to arena spawn (1ms)
+        // Make player invincible for 2 seconds
+        player.setInvulnerable(true);
+        
+        // Clear inventories of both players
+        player.getInventory().clear();
+        player.getInventory().setArmorContents(null);
+        player.getInventory().setItemInOffHand(null);
+        player.updateInventory();
+        
+        if (killer != null) {
+            killer.getInventory().clear();
+            killer.getInventory().setArmorContents(null);
+            killer.getInventory().setItemInOffHand(null);
+            killer.updateInventory();
+        }
+        
+        // Ensure player stays at death location
         new BukkitRunnable() {
             @Override
             public void run() {
-                // Teleport player back to arena
-                Location arenaSpawn = match.getArena().getCenter(); // Using center location instead
-                player.teleport(arenaSpawn);
-                
-                // Clear inventories of both players
-                player.getInventory().clear();
-                player.getInventory().setArmorContents(null);
-                player.getInventory().setItemInOffHand(null);
-                player.updateInventory();
-                
-                if (killer != null) {
-                    // Teleport killer back to arena
-                    killer.teleport(arenaSpawn);
-                    
-                    killer.getInventory().clear();
-                    killer.getInventory().setArmorContents(null);
-                    killer.getInventory().setItemInOffHand(null);
-                    killer.updateInventory();
+                if (player.isOnline()) {
+                    // Keep player at death location
+                    player.teleport(deathLocation);
                 }
             }
-        }.runTaskLater(plugin, 1L); // 1 tick = ~50ms for instant teleport
+        }.runTaskLater(plugin, 1L); // Run 1 tick later
         
         // Announce elimination to all match players
         for (Player matchPlayer : match.getAllPlayers()) {
@@ -114,6 +115,9 @@ public class PlayerDeathListener implements Listener {
                 if (match.isFinished()) {
                     return;
                 }
+                
+                // Remove invincibility
+                player.setInvulnerable(false);
                 
                 // Restore saved inventories for both players
                 restoreInventory(player);
