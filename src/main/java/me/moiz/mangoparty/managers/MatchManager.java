@@ -386,17 +386,17 @@ public class MatchManager {
             plugin.getScoreboardManager().startMatchScoreboards(match);
         }
         
+        // Set movement restrictions for all players during countdown
+        for (Player player : players) {
+            if (player.isOnline()) {
+                // Restrict movement but allow inventory interaction
+                player.setWalkSpeed(0.0f);
+                player.setFlySpeed(0.0f);
+            }
+        }
+        
         BukkitTask countdownTask = new BukkitRunnable() {
             int countdown = 5;
-            
-            // Set movement restrictions for all players during countdown
-            for (Player player : players) {
-                if (player.isOnline()) {
-                    // Restrict movement but allow inventory interaction
-                    player.setWalkSpeed(0.0f);
-                    player.setFlySpeed(0.0f);
-                }
-            }
             
             @Override
             public void run() {
