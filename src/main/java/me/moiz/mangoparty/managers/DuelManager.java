@@ -431,9 +431,9 @@ public class DuelManager {
         player1.setGameMode(GameMode.ADVENTURE);
         player2.setGameMode(GameMode.ADVENTURE);
         
-        // Allow movement but prevent attacking
-        player1.setWalkSpeed(0.2f);
-        player2.setWalkSpeed(0.2f);
+        // Prevent movement and attacking during countdown
+        player1.setWalkSpeed(0.0f);
+        player2.setWalkSpeed(0.0f);
         
         BukkitTask countdownTask = new BukkitRunnable() {
             int countdown = 5;
@@ -628,12 +628,12 @@ public class DuelManager {
         // Set game mode to adventure during countdown
         if (player1.isOnline()) {
             player1.setGameMode(GameMode.ADVENTURE);
-            player1.setWalkSpeed(0.2f);
+            player1.setWalkSpeed(0.0f); // Prevent movement during countdown
         }
         
         if (player2.isOnline()) {
             player2.setGameMode(GameMode.ADVENTURE);
-            player2.setWalkSpeed(0.2f);
+            player2.setWalkSpeed(0.0f); // Prevent movement during countdown
         }
         
         BukkitTask countdownTask = new BukkitRunnable() {
@@ -644,11 +644,11 @@ public class DuelManager {
                 if (countdown > 0) {
                     // Display countdown
                     if (player1.isOnline()) {
-                        player1.sendTitle("§c" + countdown, "§eGet ready", 0, 20, 0);
+                        player1.sendTitle("§c" + countdown, "§eOrganize your inventory", 0, 20, 0);
                         player1.playSound(player1.getLocation(), Sound.BLOCK_NOTE_BLOCK_HARP, 1.0f, 1.0f);
                     }
                     if (player2.isOnline()) {
-                        player2.sendTitle("§c" + countdown, "§eGet ready", 0, 20, 0);
+                        player2.sendTitle("§c" + countdown, "§eOrganize your inventory", 0, 20, 0);
                         player2.playSound(player2.getLocation(), Sound.BLOCK_NOTE_BLOCK_HARP, 1.0f, 1.0f);
                     }
                     countdown--;

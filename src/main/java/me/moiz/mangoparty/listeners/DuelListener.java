@@ -62,47 +62,22 @@ public class DuelListener implements Listener {
         
         // Check if player is in a duel and would die from this damage
         if (duelManager.isInDuel(player) && player.getHealth() - event.getFinalDamage() <= 0) {
-            // We'll let the player actually die to get death animation/effects
+            // Let the player actually die to get death animation/effects
             // This will trigger the PlayerDeathEvent which will handle respawn location
             
-            // If immediate respawn is enabled, we need to handle it here
-            if (player.getWorld().getGameRuleValue("doImmediateRespawn").equalsIgnoreCase("true")) {
-                // Cancel the damage event to prevent death
-                event.setCancelled(true);
-                
-                // Handle the death manually
-                handleCustomDuelDeath(player);
-            }
-            // Otherwise let the natural death occur and PlayerDeathEvent will handle it
+            // Store death location with exact yaw/pitch preserved
+            final Location deathLocation = player.getLocation().clone();
+            // Slightly raise Y coordinate to avoid spawning inside blocks
+            deathLocation.setY(deathLocation.getY() + 0.1);
+            
+            // Store location for respawn
+            deathLocations.put(player.getUniqueId(), deathLocation);
+            
+            // Let the natural death occur and PlayerDeathEvent will handle it
         }
     }
     
-    /**
-     * Custom method to handle player deaths in duels without triggering the vanilla death event
-     */
-    private void handleCustomDuelDeath(Player player) {
-        // Store death location with exact yaw/pitch preserved
-        final Location deathLocation = player.getLocation().clone();
-        // Slightly raise Y coordinate to avoid spawning inside blocks
-        deathLocation.setY(deathLocation.getY() + 0.1);
-        
-        // Store location for respawn
-        deathLocations.put(player.getUniqueId(), deathLocation);
-        
-        // Handle duel death
-        duelManager.handlePlayerDeath(player);
-        
-        // Ensure player stays at death location until next round starts
-        new BukkitRunnable() {
-            @Override
-            public void run() {
-                if (player.isOnline() && duelManager.isInDuel(player)) {
-                    // Teleport back to death location to ensure player stays in arena
-                    player.teleport(deathLocation);
-                }
-            }
-        }.runTaskLater(plugin, 1L); // Run 1 tick later
-    }
+    // Removed handleCustomDuelDeath method as we're now using vanilla death handling
     
     /**
      * Handle player death in a duel (backup handler)
