@@ -10,10 +10,18 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
+import org.bukkit.inventory.ItemStack;
 import org.bukkit.scheduler.BukkitRunnable;
+
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
 
 public class PlayerDeathListener implements Listener {
     private MangoParty plugin;
+    private Map<UUID, ItemStack[]> savedInventories = new HashMap<>();
+    private Map<UUID, ItemStack[]> savedArmor = new HashMap<>();
+    private Map<UUID, ItemStack> savedOffhand = new HashMap<>();
     
     public PlayerDeathListener(MangoParty plugin) {
         this.plugin = plugin;
@@ -124,24 +132,20 @@ public class PlayerDeathListener implements Listener {
         // Update scoreboard
         plugin.getScoreboardManager().updateMatchScoreboards(match);
     }
-}
 
-private Map<UUID, ItemStack[]> savedInventories = new HashMap<>();
-private Map<UUID, ItemStack[]> savedArmor = new HashMap<>();
-private Map<UUID, ItemStack> savedOffhand = new HashMap<>();
+    public void saveInventory(Player player) {
+        savedInventories.put(player.getUniqueId(), player.getInventory().getContents().clone());
+        savedArmor.put(player.getUniqueId(), player.getInventory().getArmorContents().clone());
+        savedOffhand.put(player.getUniqueId(), player.getInventory().getItemInOffHand().clone());
+    }
 
-public void saveInventory(Player player) {
-    savedInventories.put(player.getUniqueId(), player.getInventory().getContents().clone());
-    savedArmor.put(player.getUniqueId(), player.getInventory().getArmorContents().clone());
-    savedOffhand.put(player.getUniqueId(), player.getInventory().getItemInOffHand().clone());
-}
-
-private void restoreInventory(Player player) {
-    UUID playerId = player.getUniqueId();
-    if (savedInventories.containsKey(playerId)) {
-        player.getInventory().setContents(savedInventories.get(playerId));
-        player.getInventory().setArmorContents(savedArmor.get(playerId));
-        player.getInventory().setItemInOffHand(savedOffhand.get(playerId));
-        player.updateInventory();
+    private void restoreInventory(Player player) {
+        UUID playerId = player.getUniqueId();
+        if (savedInventories.containsKey(playerId)) {
+            player.getInventory().setContents(savedInventories.get(playerId));
+            player.getInventory().setArmorContents(savedArmor.get(playerId));
+            player.getInventory().setItemInOffHand(savedOffhand.get(playerId));
+            player.updateInventory();
+        }
     }
 }
