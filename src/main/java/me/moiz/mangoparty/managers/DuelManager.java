@@ -436,7 +436,7 @@ public class DuelManager {
         player2.setWalkSpeed(0.0f);
         
         BukkitTask countdownTask = new BukkitRunnable() {
-            int countdown = 5;
+            int countdown = 10; // Increased countdown time to give more time to organize inventory
             
             @Override
             public void run() {
@@ -454,13 +454,17 @@ public class DuelManager {
                 } else {
                     // Save inventories
                     if (player1.isOnline() && player2.isOnline()) {
-                        // Save player inventories
+                        // Save player inventories with proper cloning for all rounds
                         duel.setPlayer1Inventory(player1.getInventory().getContents().clone());
                         duel.setPlayer1Armor(player1.getInventory().getArmorContents().clone());
                         duel.setPlayer1Offhand(player1.getInventory().getItemInOffHand().clone());
                         duel.setPlayer2Inventory(player2.getInventory().getContents().clone());
                         duel.setPlayer2Armor(player2.getInventory().getArmorContents().clone());
                         duel.setPlayer2Offhand(player2.getInventory().getItemInOffHand().clone());
+                        
+                        // Notify players that their inventory has been saved
+                        player1.sendMessage("§aYour inventory has been saved for all rounds!");
+                        player2.sendMessage("§aYour inventory has been saved for all rounds!");
                         
                         // Start the round
                         startRound(duel);
@@ -493,12 +497,14 @@ public class DuelManager {
             player1.sendTitle("§aGO!", "§eRound " + duel.getCurrentRound(), 0, 20, 10);
             player1.playSound(player1.getLocation(), Sound.BLOCK_NOTE_BLOCK_PLING, 1.0f, 2.0f);
             player1.setGameMode(GameMode.SURVIVAL);
+            player1.setWalkSpeed(0.2f); // Reset walk speed to normal (default is 0.2)
         }
         
         if (player2.isOnline()) {
             player2.sendTitle("§aGO!", "§eRound " + duel.getCurrentRound(), 0, 20, 10);
             player2.playSound(player2.getLocation(), Sound.BLOCK_NOTE_BLOCK_PLING, 1.0f, 2.0f);
             player2.setGameMode(GameMode.SURVIVAL);
+            player2.setWalkSpeed(0.2f); // Reset walk speed to normal (default is 0.2)
         }
         
         // Clear titles after 1 second
@@ -524,6 +530,7 @@ public class DuelManager {
         
         // Determine winner of the round
         Player winner = null;
+        Player loser = player;
         if (player.getUniqueId().equals(duel.getChallenger().getUniqueId())) {
             winner = duel.getTarget();
             duel.incrementPlayer2Wins();
@@ -532,14 +539,34 @@ public class DuelManager {
             duel.incrementPlayer1Wins();
         }
         
-        // Check if duel is over
-        if (duel.getPlayer1Wins() >= duel.getRoundsToWin() || duel.getPlayer2Wins() >= duel.getRoundsToWin()) {
-            // Duel is over
-            endDuel(duel, winner.getUniqueId());
-        } else {
-            // Prepare for next round
-            prepareNextRound(duel);
+        // Make both players invincible and clear their inventories
+        if (winner.isOnline()) {
+            winner.setInvulnerable(true);
+            winner.getInventory().clear();
+            winner.getInventory().setArmorContents(null);
+            winner.getInventory().setItemInOffHand(null);
+            winner.updateInventory();
         }
+        
+        if (loser.isOnline()) {
+            loser.setInvulnerable(true);
+            loser.getInventory().clear();
+            loser.getInventory().setArmorContents(null);
+            loser.getInventory().setItemInOffHand(null);
+            loser.updateInventory();
+        }
+        
+        // Wait 2 seconds before proceeding to next round
+        Bukkit.getScheduler().runTaskLater(plugin, () -> {
+            // Check if duel is over
+            if (duel.getPlayer1Wins() >= duel.getRoundsToWin() || duel.getPlayer2Wins() >= duel.getRoundsToWin()) {
+                // Duel is over
+                endDuel(duel, winner.getUniqueId());
+            } else {
+                // Prepare for next round
+                prepareNextRound(duel);
+            }
+        }, 40L); // 40 ticks = 2 seconds
     }
     
     /**
@@ -576,12 +603,20 @@ public class DuelManager {
             
             // Teleport players back to spawn points
             if (player1.isOnline()) {
+                // Reset invulnerability
+                player1.setInvulnerable(false);
+                
                 player1.teleport(arena.getSpawn1());
                 player1.setHealth(20.0);
                 player1.setFoodLevel(20);
                 player1.setSaturation(20.0f);
                 
-                // Restore saved inventory
+                // Clear inventory first to avoid any leftover items
+                player1.getInventory().clear();
+                player1.getInventory().setArmorContents(null);
+                player1.getInventory().setItemInOffHand(null);
+                
+                // Restore saved inventory from first round
                 player1.getInventory().setContents(duel.getPlayer1Inventory());
                 player1.getInventory().setArmorContents(duel.getPlayer1Armor());
                 player1.getInventory().setItemInOffHand(duel.getPlayer1Offhand());
@@ -589,12 +624,20 @@ public class DuelManager {
             }
             
             if (player2.isOnline()) {
+                // Reset invulnerability
+                player2.setInvulnerable(false);
+                
                 player2.teleport(arena.getSpawn2());
                 player2.setHealth(20.0);
                 player2.setFoodLevel(20);
                 player2.setSaturation(20.0f);
                 
-                // Restore saved inventory
+                // Clear inventory first to avoid any leftover items
+                player2.getInventory().clear();
+                player2.getInventory().setArmorContents(null);
+                player2.getInventory().setItemInOffHand(null);
+                
+                // Restore saved inventory from first round
                 player2.getInventory().setContents(duel.getPlayer2Inventory());
                 player2.getInventory().setArmorContents(duel.getPlayer2Armor());
                 player2.getInventory().setItemInOffHand(duel.getPlayer2Offhand());
@@ -612,18 +655,8 @@ public class DuelManager {
     private void startNextRoundCountdown(Duel duel) {
         Player player1 = duel.getChallenger();
         Player player2 = duel.getTarget();
-        Kit kit = plugin.getKitManager().getKit(duel.getKitName());
         
         duel.setState(Duel.DuelState.COUNTDOWN);
-        
-        // Give kits to players again
-        if (player1 != null && player1.isOnline()) {
-            plugin.getKitManager().giveKit(player1, kit);
-        }
-        
-        if (player2 != null && player2.isOnline()) {
-            plugin.getKitManager().giveKit(player2, kit);
-        }
         
         // Set game mode to adventure during countdown
         if (player1.isOnline()) {
@@ -644,11 +677,11 @@ public class DuelManager {
                 if (countdown > 0) {
                     // Display countdown
                     if (player1.isOnline()) {
-                        player1.sendTitle("§c" + countdown, "§eOrganize your inventory", 0, 20, 0);
+                        player1.sendTitle("§c" + countdown, "§eGet ready", 0, 20, 0);
                         player1.playSound(player1.getLocation(), Sound.BLOCK_NOTE_BLOCK_HARP, 1.0f, 1.0f);
                     }
                     if (player2.isOnline()) {
-                        player2.sendTitle("§c" + countdown, "§eOrganize your inventory", 0, 20, 0);
+                        player2.sendTitle("§c" + countdown, "§eGet ready", 0, 20, 0);
                         player2.playSound(player2.getLocation(), Sound.BLOCK_NOTE_BLOCK_HARP, 1.0f, 1.0f);
                     }
                     countdown--;
@@ -675,6 +708,15 @@ public class DuelManager {
         Player player2 = duel.getTarget();
         Player winner = Bukkit.getPlayer(winnerUuid);
         Player loser = winner != null && winner.equals(player1) ? player2 : player1;
+        
+        // Reset invulnerability for both players
+        if (player1.isOnline()) {
+            player1.setInvulnerable(false);
+        }
+        
+        if (player2.isOnline()) {
+            player2.setInvulnerable(false);
+        }
         
         // Announce winner
         String winMessage = plugin.getConfig().getString("messages.player-duel.duel-victory")
