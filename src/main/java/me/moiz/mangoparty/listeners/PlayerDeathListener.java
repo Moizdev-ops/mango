@@ -78,7 +78,7 @@ public class PlayerDeathListener implements Listener {
             @Override
             public void run() {
                 // Teleport player back to arena
-                Location arenaSpawn = match.getArena().getSpawnLocation();
+                Location arenaSpawn = match.getArena().getCenter(); // Using center location instead
                 player.teleport(arenaSpawn);
                 
                 // Clear inventories of both players
