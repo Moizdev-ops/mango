@@ -556,12 +556,15 @@ public class DuelManager {
             loser.updateInventory();
         }
         
+        // Store winner UUID for lambda to avoid effectively final issue
+        final UUID winnerUUID = winner.getUniqueId();
+        
         // Wait 2 seconds before proceeding to next round
         Bukkit.getScheduler().runTaskLater(plugin, () -> {
             // Check if duel is over
             if (duel.getPlayer1Wins() >= duel.getRoundsToWin() || duel.getPlayer2Wins() >= duel.getRoundsToWin()) {
                 // Duel is over
-                endDuel(duel, winner.getUniqueId());
+                endDuel(duel, winnerUUID);
             } else {
                 // Prepare for next round
                 prepareNextRound(duel);
