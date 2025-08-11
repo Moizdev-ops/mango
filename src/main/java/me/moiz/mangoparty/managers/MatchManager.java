@@ -392,34 +392,27 @@ public class MatchManager {
             @Override
             public void run() {
                 if (countdown > 0) {
-                    // Display countdown
                     for (Player player : players) {
                         if (player.isOnline()) {
-                            player.sendTitle("§c" + countdown, "§7Match starting...", 0, 20, 0);
-                            player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_HARP, 1.0f, 1.0f);
+                            player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_PLING, 1f, 1f);
+                            player.sendTitle("§e" + countdown, "§6Organize your inventory", 0, 20, 10);
                         }
                     }
                     countdown--;
                 } else {
-                    // Start match
-                    match.setState(Match.MatchState.ACTIVE);
+                    // Save inventories for all players
                     for (Player player : players) {
                         if (player.isOnline()) {
-                            // Clear title and show GO message briefly
-                            player.sendTitle("§aGO!", "§7Fight!", 0, 20, 10);
-                            player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_PLING, 1.0f, 2.0f);
-                            player.setGameMode(GameMode.SURVIVAL);
+                            plugin.getPlayerDeathListener().saveInventory(player);
                             player.setWalkSpeed(0.2f);
                             player.setFlySpeed(0.1f);
-                            
-                            // Clear title after 1 second
-                            Bukkit.getScheduler().runTaskLater(plugin, () -> {
-                                if (player.isOnline()) {
-                                    player.sendTitle("", "", 0, 0, 0);
-                                }
-                            }, 20L);
+                            player.setGameMode(GameMode.SURVIVAL);
+                            player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 1f, 1f);
+                            player.sendTitle("§c§lFIGHT!", "", 0, 20, 10);
                         }
                     }
+                    
+                    match.setState(Match.MatchState.ACTIVE);
                     
                     // Update scoreboards
                     plugin.getScoreboardManager().updateMatchScoreboards(match);

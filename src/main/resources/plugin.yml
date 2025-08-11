@@ -46,13 +46,6 @@ commands:
     description: Challenge a player to a duel
     usage: /duel <player> <kit> <rounds>
     aliases: [d]
-  
-
-  
-  mangoduelcallback:
-    description: Internal command for duel callbacks
-    usage: /mangoduelcallback <action> <uuid>
-    permission-message: ""
 
 permissions:
   mangoparty.admin:

@@ -65,37 +65,39 @@ public class PlayerDeathListener implements Listener {
             }
         }
         
-        // Clear inventory completely for spectators
+        // Clear inventories of both players
         player.getInventory().clear();
         player.getInventory().setArmorContents(null);
         player.getInventory().setItemInOffHand(null);
         player.updateInventory();
         
-        // Make player spectator using new system
-        plugin.getSpectatorListener().makeSpectator(player);
-        
-        // Find a living teammate or opponent to spectate
-        Player spectateTarget = null;
-        for (Player alive : match.getAllPlayers()) {
-            if (match.isPlayerAlive(alive.getUniqueId()) && alive.isOnline()) {
-                spectateTarget = alive;
-                break;
-            }
+        if (killer != null) {
+            killer.getInventory().clear();
+            killer.getInventory().setArmorContents(null);
+            killer.getInventory().setItemInOffHand(null);
+            killer.updateInventory();
         }
         
-        if (spectateTarget != null) {
-            final Player finalSpectateTarget = spectateTarget;
-            // Teleport to spectate target after a short delay
-            new BukkitRunnable() {
-                @Override
-                public void run() {
-                    if (player.isOnline()) {
-                        player.teleport(finalSpectateTarget.getLocation());
-                        player.sendMessage("§7Now spectating §e" + finalSpectateTarget.getName() + "§7. Use §e/spectate <player> §7to switch.");
-                    }
+        // Start new round after 2 seconds
+        new BukkitRunnable() {
+            @Override
+            public void run() {
+                if (match.isFinished()) {
+                    return;
                 }
-            }.runTaskLater(plugin, 10L); // 0.5 second delay
-        }
+                
+                // Restore saved inventories for both players
+                restoreInventory(player);
+                if (killer != null) {
+                    restoreInventory(killer);
+                }
+        
+                // Show countdown message
+                for (Player matchPlayer : match.getAllPlayers()) {
+                    matchPlayer.sendTitle("§6§lNEW ROUND", "§eOrganize your inventory", 10, 100, 10);
+                }
+            }
+        }.runTaskLater(plugin, 40L); // 2 seconds = 40 ticks
     }
     
     @EventHandler(priority = EventPriority.HIGHEST)
@@ -121,5 +123,25 @@ public class PlayerDeathListener implements Listener {
         
         // Update scoreboard
         plugin.getScoreboardManager().updateMatchScoreboards(match);
+    }
+}
+
+private Map<UUID, ItemStack[]> savedInventories = new HashMap<>();
+private Map<UUID, ItemStack[]> savedArmor = new HashMap<>();
+private Map<UUID, ItemStack> savedOffhand = new HashMap<>();
+
+public void saveInventory(Player player) {
+    savedInventories.put(player.getUniqueId(), player.getInventory().getContents().clone());
+    savedArmor.put(player.getUniqueId(), player.getInventory().getArmorContents().clone());
+    savedOffhand.put(player.getUniqueId(), player.getInventory().getItemInOffHand().clone());
+}
+
+private void restoreInventory(Player player) {
+    UUID playerId = player.getUniqueId();
+    if (savedInventories.containsKey(playerId)) {
+        player.getInventory().setContents(savedInventories.get(playerId));
+        player.getInventory().setArmorContents(savedArmor.get(playerId));
+        player.getInventory().setItemInOffHand(savedOffhand.get(playerId));
+        player.updateInventory();
     }
 }
