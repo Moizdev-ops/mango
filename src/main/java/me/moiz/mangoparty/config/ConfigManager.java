@@ -140,7 +140,7 @@ public class ConfigManager {
         if (!guiFile.exists()) {
             // Create default config
             guiConfig = new YamlConfiguration();
-            guiConfig.set("title", "§6Select Kit - " + matchType.toUpperCase());
+            guiConfig.set("title", "&6Select Kit - " + matchType.toUpperCase());
             guiConfig.set("size", 27);
             guiConfig.createSection("kits");
             try {
@@ -190,7 +190,7 @@ public class ConfigManager {
         // Add kit details to config
         String kitConfigKey = kit.getName().toLowerCase().replace(" ", "_"); // Sanitize key
         kitsSection.set(kitConfigKey + ".slot", slot);
-        kitsSection.set(kitConfigKey + ".name", "§c§l" + kit.getName());
+        kitsSection.set(kitConfigKey + ".name", "&c&l" + kit.getName());
         kitsSection.set(kitConfigKey + ".kit", kit.getName());
         
         // Set empty lore as requested by user
@@ -218,7 +218,7 @@ public class ConfigManager {
         if (!guiFile.exists()) {
             // Create default queue config
             guiConfig = new YamlConfiguration();
-            guiConfig.set("title", "§6" + mode.toUpperCase() + " Kit Selection");
+            guiConfig.set("title", "&6" + mode.toUpperCase() + " Kit Selection");
             guiConfig.set("size", 27);
             guiConfig.createSection("kits");
             
@@ -270,7 +270,7 @@ public class ConfigManager {
         String kitConfigKey = kit.getName();
         kitsSection.set(kitConfigKey + ".slot", slot);
         kitsSection.set(kitConfigKey + ".material", kit.getIcon() != null ? kit.getIcon().getType().toString() : "IRON_SWORD");
-        kitsSection.set(kitConfigKey + ".name", "§c§l" + kit.getName());
+        kitsSection.set(kitConfigKey + ".name", "&c&l" + kit.getName());
         
         // Set empty lore as requested by user
         kitsSection.set(kitConfigKey + ".lore", new ArrayList<String>());

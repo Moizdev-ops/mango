@@ -9,6 +9,7 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
+import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.scheduler.BukkitRunnable;
@@ -23,7 +24,50 @@ public class DuelListener implements Listener {
     }
     
     /**
-     * Handle player death in a duel
+     * Handle fatal damage to players in duels
+     */
+    @EventHandler(priority = EventPriority.HIGHEST)
+    public void onPlayerDamage(EntityDamageEvent event) {
+        if (!(event.getEntity() instanceof Player)) {
+            return;
+        }
+        
+        Player player = (Player) event.getEntity();
+        
+        // Check if player is in a duel and would die from this damage
+        if (duelManager.isInDuel(player) && player.getHealth() - event.getFinalDamage() <= 0) {
+            // Cancel the damage event to prevent death
+            event.setCancelled(true);
+            
+            // Handle the death manually
+            handleCustomDuelDeath(player);
+        }
+    }
+    
+    /**
+     * Custom method to handle player deaths in duels without triggering the vanilla death event
+     */
+    private void handleCustomDuelDeath(Player player) {
+        // Store death location
+        final Location deathLocation = player.getLocation().clone();
+        
+        // Handle duel death
+        duelManager.handlePlayerDeath(player);
+        
+        // Ensure player stays at death location until next round starts
+        new BukkitRunnable() {
+            @Override
+            public void run() {
+                if (player.isOnline() && duelManager.isInDuel(player)) {
+                    // Teleport back to death location to ensure player stays in arena
+                    player.teleport(deathLocation);
+                }
+            }
+        }.runTaskLater(plugin, 1L); // Run 1 tick later
+    }
+    
+    /**
+     * Handle player death in a duel (backup handler)
      */
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onPlayerDeath(PlayerDeathEvent event) {
@@ -37,22 +81,11 @@ public class DuelListener implements Listener {
             event.getDrops().clear();
             event.setDroppedExp(0);
             
-            // Store death location for respawn
-            final Location deathLocation = player.getLocation().clone();
+            // Cancel the death event to prevent respawn
+            player.setHealth(20.0);
             
-            // Handle duel death
-            duelManager.handlePlayerDeath(player);
-            
-            // Schedule a task to ensure player stays at death location until next round starts
-            new BukkitRunnable() {
-                @Override
-                public void run() {
-                    if (player.isOnline() && duelManager.isInDuel(player)) {
-                        // Teleport back to death location to ensure player stays in arena
-                        player.teleport(deathLocation);
-                    }
-                }
-            }.runTaskLater(plugin, 1L); // Run 1 tick later
+            // Handle the death manually (this is a backup in case the damage event handler fails)
+            handleCustomDuelDeath(player);
         }
     }
     

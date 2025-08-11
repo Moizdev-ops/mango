@@ -3,6 +3,7 @@ package me.moiz.mangoparty.managers;
 import me.moiz.mangoparty.MangoParty;
 import me.moiz.mangoparty.models.Kit;
 import me.moiz.mangoparty.models.KitRules;
+import me.moiz.mangoparty.utils.HexUtils;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
@@ -70,6 +71,10 @@ public class KitManager {
                 kit.setArmor(armor);
             }
             
+            if (config.contains("offhand")) {
+                kit.setOffhand(config.getItemStack("offhand"));
+            }
+            
             if (config.contains("icon")) {
                 kit.setIcon(config.getItemStack("icon"));
             }
@@ -90,7 +95,7 @@ public class KitManager {
             
             return kit;
         } catch (Exception e) {
-            plugin.getLogger().warning("§c⚠️ Failed to load kit: " + name + " - " + e.getMessage());
+            plugin.getLogger().warning(HexUtils.colorize("&c⚠️ Failed to load kit: " + name + " - " + e.getMessage()));
             return null;
         }
     }
@@ -100,6 +105,7 @@ public class KitManager {
         kit.setDisplayName(name);
         kit.setContents(player.getInventory().getContents());
         kit.setArmor(player.getInventory().getArmorContents());
+        kit.setOffhand(player.getInventory().getItemInOffHand().clone());
         
         // Use first item in inventory as icon, or default to sword
         ItemStack icon = null;
@@ -128,8 +134,8 @@ public class KitManager {
         // Reload GUI configs to reflect changes
         plugin.getGuiManager().reloadGuiConfigs();
         
-        plugin.getLogger().info("§a⚔️ Created new kit: §e" + name + " §7by §e" + player.getName());
-        player.sendMessage("§aKit '" + name + "' created and added to all GUIs!");
+        plugin.getLogger().info(HexUtils.colorize("&a⚔️ Created new kit: &e" + name + " &7by &e" + player.getName()));
+        player.sendMessage(HexUtils.colorize("&aKit '" + name + "' created and added to all GUIs!"));
     }
     
     public void saveKit(Kit kit) {
@@ -154,6 +160,10 @@ public class KitManager {
             }
         }
         
+        if (kit.getOffhand() != null) {
+            config.set("offhand", kit.getOffhand());
+        }
+        
         if (kit.getIcon() != null) {
             config.set("icon", kit.getIcon());
         }
@@ -169,7 +179,7 @@ public class KitManager {
         try {
             config.save(kitFile);
         } catch (IOException e) {
-            plugin.getLogger().severe("§c❌ Failed to save kit: " + kit.getName() + " - " + e.getMessage());
+            plugin.getLogger().severe(HexUtils.colorize("&c❌ Failed to save kit: " + kit.getName() + " - " + e.getMessage()));
         }
     }
     
@@ -192,6 +202,10 @@ public class KitManager {
             player.getInventory().setArmorContents(kit.getArmor());
         }
         
+        if (kit.getOffhand() != null) {
+            player.getInventory().setItemInOffHand(kit.getOffhand());
+        }
+        
         player.updateInventory();
     }
 
@@ -201,16 +215,16 @@ public class KitManager {
             File kitFile = new File(kitsDir, name + ".yml");
             if (kitFile.exists()) {
                 if (kitFile.delete()) {
-                    plugin.getLogger().info("§a🗑️ Deleted kit file: §e" + name + ".yml");
+                    plugin.getLogger().info(HexUtils.colorize("&a🗑️ Deleted kit file: &e" + name + ".yml"));
                 } else {
-                    plugin.getLogger().severe("§c❌ Failed to delete kit file: §e" + name + ".yml");
+                    plugin.getLogger().severe(HexUtils.colorize("&c❌ Failed to delete kit file: &e" + name + ".yml"));
                 }
             } else {
-                plugin.getLogger().warning("§c⚠️ Kit file not found for deletion: §e" + name + ".yml");
+                plugin.getLogger().warning(HexUtils.colorize("&c⚠️ Kit file not found for deletion: &e" + name + ".yml"));
             }
-            plugin.getLogger().info("§a🗑️ Kit removed from memory: §e" + name);
+            plugin.getLogger().info(HexUtils.colorize("&a🗑️ Kit removed from memory: &e" + name));
         } else {
-            plugin.getLogger().warning("§c⚠️ Kit not found in memory for deletion: §e" + name);
+            plugin.getLogger().warning(HexUtils.colorize("&c⚠️ Kit not found in memory for deletion: &e" + name));
         }
     }
 }

@@ -69,15 +69,15 @@ public class GuiManager implements Listener {
     }
     
     public void openMatchTypeGui(Player player) {
-        Inventory gui = Bukkit.createInventory(null, 27, "§6Select Match Type");
+        Inventory gui = Bukkit.createInventory(null, 27, HexUtils.colorize("&6Select Match Type"));
         
         // Party Split item
         ItemStack splitItem = new ItemStack(Material.IRON_SWORD);
         ItemMeta splitMeta = splitItem.getItemMeta();
-        splitMeta.setDisplayName("§aParty Split");
+        splitMeta.setDisplayName(HexUtils.colorize("&aParty Split"));
         List<String> splitLore = new ArrayList<>();
-        splitLore.add("§7Divide party into teams");
-        splitLore.add("§7and fight each other");
+        splitLore.add(HexUtils.colorize("&7Divide party into teams"));
+        splitLore.add(HexUtils.colorize("&7and fight each other"));
         splitMeta.setLore(splitLore);
         splitItem.setItemMeta(splitMeta);
         gui.setItem(10, splitItem);
@@ -85,10 +85,10 @@ public class GuiManager implements Listener {
         // Party FFA item
         ItemStack ffaItem = new ItemStack(Material.DIAMOND_SWORD);
         ItemMeta ffaMeta = ffaItem.getItemMeta();
-        ffaMeta.setDisplayName("§cParty FFA");
+        ffaMeta.setDisplayName(HexUtils.colorize("&cParty FFA"));
         List<String> ffaLore = new ArrayList<>();
-        ffaLore.add("§7Free for all battle");
-        ffaLore.add("§7Last player standing wins");
+        ffaLore.add(HexUtils.colorize("&7Free for all battle"));
+        ffaLore.add(HexUtils.colorize("&7Last player standing wins"));
         ffaMeta.setLore(ffaLore);
         ffaItem.setItemMeta(ffaMeta);
         gui.setItem(12, ffaItem);
@@ -96,10 +96,10 @@ public class GuiManager implements Listener {
         // Party vs Party item
         ItemStack pvpItem = new ItemStack(Material.PLAYER_HEAD);
         ItemMeta pvpMeta = pvpItem.getItemMeta();
-        pvpMeta.setDisplayName("§eParty vs Party");
+        pvpMeta.setDisplayName(HexUtils.colorize("&eParty vs Party"));
         List<String> pvpLore = new ArrayList<>();
-        pvpLore.add("§7Challenge another party");
-        pvpLore.add("§7to an epic team battle");
+        pvpLore.add(HexUtils.colorize("&7Challenge another party"));
+        pvpLore.add(HexUtils.colorize("&7to an epic team battle"));
         pvpMeta.setLore(pvpLore);
         pvpItem.setItemMeta(pvpMeta);
         gui.setItem(14, pvpItem);
@@ -107,30 +107,30 @@ public class GuiManager implements Listener {
         // Queue modes
         ItemStack queue1v1 = new ItemStack(Material.GOLDEN_SWORD);
         ItemMeta queue1v1Meta = queue1v1.getItemMeta();
-        queue1v1Meta.setDisplayName("§61v1 Queue");
+        queue1v1Meta.setDisplayName(HexUtils.colorize("&61v1 Queue"));
         List<String> queue1v1Lore = new ArrayList<>();
-        queue1v1Lore.add("§7Join 1v1 ranked queue");
-        queue1v1Lore.add("§7Fight solo opponents");
+        queue1v1Lore.add(HexUtils.colorize("&7Join 1v1 ranked queue"));
+        queue1v1Lore.add(HexUtils.colorize("&7Fight solo opponents"));
         queue1v1Meta.setLore(queue1v1Lore);
         queue1v1.setItemMeta(queue1v1Meta);
         gui.setItem(19, queue1v1);
         
         ItemStack queue2v2 = new ItemStack(Material.GOLDEN_AXE);
         ItemMeta queue2v2Meta = queue2v2.getItemMeta();
-        queue2v2Meta.setDisplayName("§62v2 Queue");
+        queue2v2Meta.setDisplayName(HexUtils.colorize("&62v2 Queue"));
         List<String> queue2v2Lore = new ArrayList<>();
-        queue2v2Lore.add("§7Join 2v2 team queue");
-        queue2v2Lore.add("§7Fight with a teammate");
+        queue2v2Lore.add(HexUtils.colorize("&7Join 2v2 team queue"));
+        queue2v2Lore.add(HexUtils.colorize("&7Fight with a teammate"));
         queue2v2Meta.setLore(queue2v2Lore);
         queue2v2.setItemMeta(queue2v2Meta);
         gui.setItem(21, queue2v2);
         
         ItemStack queue3v3 = new ItemStack(Material.NETHERITE_SWORD);
         ItemMeta queue3v3Meta = queue3v3.getItemMeta();
-        queue3v3Meta.setDisplayName("§63v3 Queue");
+        queue3v3Meta.setDisplayName(HexUtils.colorize("&63v3 Queue"));
         List<String> queue3v3Lore = new ArrayList<>();
-        queue3v3Lore.add("§7Join 3v3 team queue");
-        queue3v3Lore.add("§7Epic team battles");
+        queue3v3Lore.add(HexUtils.colorize("&7Join 3v3 team queue"));
+        queue3v3Lore.add(HexUtils.colorize("&7Epic team battles"));
         queue3v3Meta.setLore(queue3v3Lore);
         queue3v3.setItemMeta(queue3v3Meta);
         gui.setItem(23, queue3v3);
@@ -141,11 +141,11 @@ public class GuiManager implements Listener {
     public void openPartyDuelGui(Player player) {
         Party playerParty = plugin.getPartyManager().getParty(player);
         if (playerParty == null) {
-            player.sendMessage("§cYou are not in a party!");
+            player.sendMessage(HexUtils.colorize("&cYou are not in a party!"));
             return;
         }
         
-        Inventory gui = Bukkit.createInventory(null, 54, "§6Challenge Party");
+        Inventory gui = Bukkit.createInventory(null, 54, HexUtils.colorize("&6Challenge Party"));
         
         int slot = 0;
         for (Player online : Bukkit.getOnlinePlayers()) {
@@ -160,16 +160,16 @@ public class GuiManager implements Listener {
                 ItemStack head = new ItemStack(Material.PLAYER_HEAD);
                 SkullMeta meta = (SkullMeta) head.getItemMeta();
                 meta.setOwningPlayer(online);
-                meta.setDisplayName("§e" + online.getName() + "'s Party");
+                meta.setDisplayName(HexUtils.colorize("&e" + online.getName() + "'s Party"));
                 
                 List<String> lore = new ArrayList<>();
-                lore.add("§7Members: §f" + otherParty.getSize());
+                lore.add(HexUtils.colorize("&7Members: &f" + otherParty.getSize()));
                 for (Player member : otherParty.getOnlineMembers()) {
                     if (lore.size() < 8) { // Limit lore size
-                        lore.add("§8• §7" + member.getName());
+                        lore.add(HexUtils.colorize("&8• &7" + member.getName()));
                     }
                 }
-                lore.add("§aClick to challenge!");
+                lore.add(HexUtils.colorize("&aClick to challenge!"));
                 meta.setLore(lore);
                 head.setItemMeta(meta);
                 
@@ -183,7 +183,7 @@ public class GuiManager implements Listener {
     
     public void openKitGui(Player player, String matchType) {
         YamlConfiguration config = "split".equalsIgnoreCase(matchType) ? splitConfig : ffaConfig;
-        String title = config.getString("title", "§6Select Kit");
+        String title = HexUtils.colorize(config.getString("title", "&6Select Kit"));
         int size = config.getInt("size", 27);
         
         Inventory gui = Bukkit.createInventory(null, size, title);
@@ -265,8 +265,8 @@ public class GuiManager implements Listener {
     
     public void openQueueKitGui(Player player, String mode) {
         YamlConfiguration config = loadQueueConfig(mode);
-        String title = "§6" + mode.toUpperCase() + " Kit Selection";
-        int size = 27; // Default size
+        String title = HexUtils.colorize(config.getString("title", "&6" + mode.toUpperCase() + " Kit Selection"));
+        int size = config.getInt("size", 27); // Default size
         
         Inventory gui = Bukkit.createInventory(null, size, title);
         
@@ -315,7 +315,7 @@ public class GuiManager implements Listener {
 
     public void openPartyVsPartyKitGui(Player challenger, Player challengedLeader) {
         // Use split config for party vs party
-        String title = "§6Select Kit for Party Duel";
+        String title = HexUtils.colorize("&6Select Kit for Party Duel");
         int size = splitConfig.getInt("size", 27);
         
         Inventory gui = Bukkit.createInventory(null, size, title);
@@ -605,14 +605,14 @@ public class GuiManager implements Listener {
         // Get player's party
         Party party = plugin.getPartyManager().getParty(player);
         if (party == null || !party.isLeader(player.getUniqueId())) {
-            player.sendMessage("§cYou must be a party leader to start matches!");
+            player.sendMessage(HexUtils.colorize("&cYou must be a party leader to start matches!"));
             return;
         }
         
         // Get an available arena
         Arena arena = plugin.getArenaManager().getAvailableArena();
         if (arena == null) {
-            player.sendMessage("§cNo available arenas! All arenas are currently in use.");
+            player.sendMessage(HexUtils.colorize("&cNo available arenas! All arenas are currently in use."));
             return;
         }
         
@@ -622,7 +622,7 @@ public class GuiManager implements Listener {
         if (leaderPlayer != null) {
             plugin.getMatchManager().startMatchPreparation(leaderPlayer, kit, matchType);
         }
-        player.sendMessage("§aStarting " + matchType + " match with kit: " + kit.getDisplayName());
+        player.sendMessage(HexUtils.colorize("&aStarting " + matchType + " match with kit: " + kit.getDisplayName()));
     }
     
     private ItemStack createItem(Material material, String displayName, List<String> lore) {

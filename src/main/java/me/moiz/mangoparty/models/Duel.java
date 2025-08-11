@@ -24,8 +24,10 @@ public class Duel {
     // Saved inventories
     private ItemStack[] player1Inventory;
     private ItemStack[] player1Armor;
+    private ItemStack player1Offhand;
     private ItemStack[] player2Inventory;
     private ItemStack[] player2Armor;
+    private ItemStack player2Offhand;
     
     public enum DuelState {
         PENDING,
@@ -187,5 +189,21 @@ public class Duel {
     
     public void setPlayer2Armor(ItemStack[] player2Armor) {
         this.player2Armor = player2Armor;
+    }
+    
+    public ItemStack getPlayer1Offhand() {
+        return player1Offhand;
+    }
+    
+    public void setPlayer1Offhand(ItemStack player1Offhand) {
+        this.player1Offhand = player1Offhand;
+    }
+    
+    public ItemStack getPlayer2Offhand() {
+        return player2Offhand;
+    }
+    
+    public void setPlayer2Offhand(ItemStack player2Offhand) {
+        this.player2Offhand = player2Offhand;
     }
 }

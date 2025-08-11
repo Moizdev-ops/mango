@@ -457,8 +457,10 @@ public class DuelManager {
                         // Save player inventories
                         duel.setPlayer1Inventory(player1.getInventory().getContents().clone());
                         duel.setPlayer1Armor(player1.getInventory().getArmorContents().clone());
+                        duel.setPlayer1Offhand(player1.getInventory().getItemInOffHand().clone());
                         duel.setPlayer2Inventory(player2.getInventory().getContents().clone());
                         duel.setPlayer2Armor(player2.getInventory().getArmorContents().clone());
+                        duel.setPlayer2Offhand(player2.getInventory().getItemInOffHand().clone());
                         
                         // Start the round
                         startRound(duel);
@@ -582,6 +584,7 @@ public class DuelManager {
                 // Restore saved inventory
                 player1.getInventory().setContents(duel.getPlayer1Inventory());
                 player1.getInventory().setArmorContents(duel.getPlayer1Armor());
+                player1.getInventory().setItemInOffHand(duel.getPlayer1Offhand());
                 player1.updateInventory();
             }
             
@@ -594,6 +597,7 @@ public class DuelManager {
                 // Restore saved inventory
                 player2.getInventory().setContents(duel.getPlayer2Inventory());
                 player2.getInventory().setArmorContents(duel.getPlayer2Armor());
+                player2.getInventory().setItemInOffHand(duel.getPlayer2Offhand());
                 player2.updateInventory();
             }
             

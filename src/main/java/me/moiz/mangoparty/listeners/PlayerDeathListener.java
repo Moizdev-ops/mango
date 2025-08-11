@@ -8,6 +8,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
+import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.scheduler.BukkitRunnable;
 
@@ -19,21 +20,29 @@ public class PlayerDeathListener implements Listener {
     }
     
     @EventHandler(priority = EventPriority.HIGHEST)
-    public void onPlayerDeath(PlayerDeathEvent event) {
-        Player player = event.getEntity();
-        Match match = plugin.getMatchManager().getPlayerMatch(player);
-        
-        if (match == null) {
-            return; // Player not in a match
+    public void onPlayerDamage(EntityDamageEvent event) {
+        if (!(event.getEntity() instanceof Player)) {
+            return;
         }
         
-        // Override death behavior for match players
-        event.setKeepInventory(true);
-        event.setKeepLevel(true);
-        event.getDrops().clear();
-        event.setDroppedExp(0);
+        Player player = (Player) event.getEntity();
+        Match match = plugin.getMatchManager().getPlayerMatch(player);
         
-        // Store death location for spectator setup (make it final)
+        // Check if player is in a match and would die from this damage
+        if (match != null && player.getHealth() - event.getFinalDamage() <= 0) {
+            // Cancel the damage event to prevent death
+            event.setCancelled(true);
+            
+            // Handle the death manually
+            handlePlayerDeath(player, match);
+        }
+    }
+    
+    /**
+     * Custom method to handle player deaths in matches without triggering the vanilla death event
+     */
+    private void handlePlayerDeath(Player player, Match match) {
+        // Store death location
         final Location deathLocation = player.getLocation().clone();
         
         // Handle killer if exists
@@ -56,47 +65,59 @@ public class PlayerDeathListener implements Listener {
             }
         }
         
-        // Schedule spectator setup after respawn (longer delay to ensure respawn is processed)
-        new BukkitRunnable() {
-            @Override
-            public void run() {
-                if (player.isOnline()) {
-                    // Teleport back to death location first
-                    player.teleport(deathLocation);
-                    
-                    // Clear inventory completely for spectators
-                    player.getInventory().clear();
-                    player.getInventory().setArmorContents(null);
-                    player.updateInventory();
-                    
-                    // Make player spectator using new system
-                    plugin.getSpectatorListener().makeSpectator(player);
-                    
-                    // Find a living teammate or opponent to spectate
-                    Player spectateTarget = null;
-                    Match currentMatch = plugin.getMatchManager().getPlayerMatch(player);
-                    if (currentMatch != null) {
-                        for (Player alive : currentMatch.getAllPlayers()) {
-                            if (currentMatch.isPlayerAlive(alive.getUniqueId()) && alive.isOnline()) {
-                                spectateTarget = alive;
-                                break;
-                            }
-                        }
+        // Clear inventory completely for spectators
+        player.getInventory().clear();
+        player.getInventory().setArmorContents(null);
+        player.getInventory().setItemInOffHand(null);
+        player.updateInventory();
+        
+        // Make player spectator using new system
+        plugin.getSpectatorListener().makeSpectator(player);
+        
+        // Find a living teammate or opponent to spectate
+        Player spectateTarget = null;
+        for (Player alive : match.getAllPlayers()) {
+            if (match.isPlayerAlive(alive.getUniqueId()) && alive.isOnline()) {
+                spectateTarget = alive;
+                break;
+            }
+        }
+        
+        if (spectateTarget != null) {
+            final Player finalSpectateTarget = spectateTarget;
+            // Teleport to spectate target after a short delay
+            new BukkitRunnable() {
+                @Override
+                public void run() {
+                    if (player.isOnline()) {
+                        player.teleport(finalSpectateTarget.getLocation());
+                        player.sendMessage("§7Now spectating §e" + finalSpectateTarget.getName() + "§7. Use §e/spectate <player> §7to switch.");
                     }
-                    
-                    if (spectateTarget != null) {
-                        final Player finalSpectateTarget = spectateTarget;
-                        // Teleport to spectate target after a short delay
-                        new BukkitRunnable() {
-                            @Override
-                            public void run() {
-                                if (player.isOnline()) {
-                                    player.teleport(finalSpectateTarget.getLocation());
-                                    player.sendMessage("§7Now spectating §e" + finalSpectateTarget.getName() + "§7. Use §e/spectate <player> §7to switch.");
-                                }
-                            }
-                        }.runTaskLater(plugin, 10L); // 0.5 second delay
-                    }
+                }
+            }.runTaskLater(plugin, 10L); // 0.5 second delay
+        }
+    }
+    
+    @EventHandler(priority = EventPriority.HIGHEST)
+    public void onPlayerDeath(PlayerDeathEvent event) {
+        Player player = event.getEntity();
+        Match match = plugin.getMatchManager().getPlayerMatch(player);
+        
+        if (match == null) {
+            return; // Player not in a match
+        }
+        
+        // Override death behavior for match players
+        event.setKeepInventory(true);
+        event.setKeepLevel(true);
+        event.getDrops().clear();
+        event.setDroppedExp(0);
+        
+        // Cancel the death event to prevent respawn
+        player.setHealth(20.0);
+        
+        // Handle the death manually
+        handlePlayerDeath(player, match);
                     
                     // Update scoreboard
                     Match currentMatch2 = plugin.getMatchManager().getPlayerMatch(player);

@@ -7,6 +7,7 @@ public class Kit {
     private String displayName;
     private ItemStack[] contents;
     private ItemStack[] armor;
+    private ItemStack offhand;
     private ItemStack icon;
     private KitRules rules;
     
@@ -58,5 +59,13 @@ public class Kit {
     
     public void setRules(KitRules rules) {
         this.rules = rules;
+    }
+    
+    public ItemStack getOffhand() {
+        return offhand;
+    }
+    
+    public void setOffhand(ItemStack offhand) {
+        this.offhand = offhand;
     }
 }
