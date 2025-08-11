@@ -305,6 +305,7 @@ public class ScoreboardManager {
             processedLine = processedLine.replace("{kit}", duel.getKitName());
             processedLine = processedLine.replace("{rounds_to_win}", String.valueOf(duel.getRoundsToWin()));
             processedLine = processedLine.replace("{current_round}", String.valueOf(duel.getCurrentRound()));
+            processedLine = processedLine.replace("{total_rounds}", String.valueOf(duel.getRoundsToWin() * 2 - 1));
             
             // Player specific placeholders
             processedLine = processedLine.replace("{player}", player.getName());

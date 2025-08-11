@@ -3,6 +3,7 @@ package me.moiz.mangoparty.listeners;
 import me.moiz.mangoparty.MangoParty;
 import me.moiz.mangoparty.managers.DuelManager;
 import me.moiz.mangoparty.models.Duel;
+import org.bukkit.Location;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -10,6 +11,7 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
+import org.bukkit.scheduler.BukkitRunnable;
 
 public class DuelListener implements Listener {
     private final MangoParty plugin;
@@ -35,8 +37,22 @@ public class DuelListener implements Listener {
             event.getDrops().clear();
             event.setDroppedExp(0);
             
+            // Store death location for respawn
+            final Location deathLocation = player.getLocation().clone();
+            
             // Handle duel death
             duelManager.handlePlayerDeath(player);
+            
+            // Schedule a task to ensure player stays at death location until next round starts
+            new BukkitRunnable() {
+                @Override
+                public void run() {
+                    if (player.isOnline() && duelManager.isInDuel(player)) {
+                        // Teleport back to death location to ensure player stays in arena
+                        player.teleport(deathLocation);
+                    }
+                }
+            }.runTaskLater(plugin, 1L); // Run 1 tick later
         }
     }
     

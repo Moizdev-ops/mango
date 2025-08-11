@@ -38,11 +38,19 @@ public class HexUtils {
         if (SUPPORTS_HEX) {
             // Process hex colors
             Matcher matcher = HEX_PATTERN.matcher(message);
+            StringBuffer buffer = new StringBuffer();
             while (matcher.find()) {
                 String hexCode = matcher.group(1);
-                String replacement = ChatColor.of("#" + hexCode).toString();
-                message = message.replace("&#" + hexCode, replacement);
+                try {
+                    String replacement = ChatColor.of("#" + hexCode).toString();
+                    matcher.appendReplacement(buffer, replacement);
+                } catch (Exception e) {
+                    // If there's an error with this hex code, just keep the original text
+                    matcher.appendReplacement(buffer, "&#" + hexCode);
+                }
             }
+            matcher.appendTail(buffer);
+            message = buffer.toString();
         } else {
             // Fallback to legacy colors for older versions
             message = convertHexToLegacy(message);

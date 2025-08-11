@@ -95,28 +95,41 @@ public class DuelManager {
                              .replace("{kit}", kit.getDisplayName())
                              .replace("{rounds}", String.valueOf(roundsToWin)));
         
-        // Create clickable accept/decline buttons with callback UUIDs
-        TextComponent message = new TextComponent(plugin.getConfig().getString("messages.player-duel.challenge-received")
-                                                .replace("{challenger}", challenger.getName()));
+        // Create stylish duel challenge message with clickable buttons
+        // Header
+        TextComponent header = new TextComponent("\n§8§l§m-----§r §6§lDUEL CHALLENGE §8§l§m-----§r\n");
         
-        TextComponent kitInfo = new TextComponent(plugin.getConfig().getString("messages.player-duel.kit-info")
-                                              .replace("{kit}", kit.getDisplayName())
-                                              .replace("{rounds}", String.valueOf(roundsToWin)));
+        // Challenger info
+        TextComponent message = new TextComponent("§e" + challenger.getName() + " §7has challenged you to a duel!\n");
         
-        TextComponent acceptButton = new TextComponent("§a[ACCEPT]");
+        // Kit and rounds info
+        TextComponent kitInfo = new TextComponent("§7Kit: §b" + kit.getDisplayName() + " §7| Rounds to win: §b" + roundsToWin + "\n\n");
+        
+        // Buttons with improved styling
+        TextComponent acceptButton = new TextComponent("§a§l[ACCEPT]");
         acceptButton.setClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/mangoduelcallback accept " + duelUuid.toString()));
         acceptButton.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, 
-            new ComponentBuilder("§aClick to accept the duel").create()));
+            new ComponentBuilder("§a§lClick to accept the duel challenge").create()));
         
-        TextComponent declineButton = new TextComponent("§c[DECLINE]");
+        TextComponent spacer = new TextComponent("   ");
+        
+        TextComponent declineButton = new TextComponent("§c§l[DECLINE]");
         declineButton.setClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/mangoduelcallback decline " + duelUuid.toString()));
         declineButton.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, 
-            new ComponentBuilder("§cClick to decline the duel").create()));
+            new ComponentBuilder("§c§lClick to decline the duel challenge").create()));
+        
+        // Footer
+        TextComponent footer = new TextComponent("\n§8§l§m--------------------------§r\n");
         
         // Send to target player
+        target.spigot().sendMessage(header);
         target.spigot().sendMessage(message);
         target.spigot().sendMessage(kitInfo);
-        target.spigot().sendMessage(acceptButton, new TextComponent(" "), declineButton);
+        target.spigot().sendMessage(acceptButton, spacer, declineButton);
+        target.spigot().sendMessage(footer);
+        
+        // Play sound to notify the player
+        target.playSound(target.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0f, 1.0f);
         
         // Set expiration timer
         duel.setExpirationTask(new BukkitRunnable() {
@@ -595,8 +608,18 @@ public class DuelManager {
     private void startNextRoundCountdown(Duel duel) {
         Player player1 = duel.getChallenger();
         Player player2 = duel.getTarget();
+        Kit kit = plugin.getKitManager().getKit(duel.getKitName());
         
         duel.setState(Duel.DuelState.COUNTDOWN);
+        
+        // Give kits to players again
+        if (player1 != null && player1.isOnline()) {
+            plugin.getKitManager().giveKit(player1, kit);
+        }
+        
+        if (player2 != null && player2.isOnline()) {
+            plugin.getKitManager().giveKit(player2, kit);
+        }
         
         // Set game mode to adventure during countdown
         if (player1.isOnline()) {

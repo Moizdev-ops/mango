@@ -6,6 +6,7 @@ kits:
     slot: 10
     name: "§cWarrior Kit"
     kit: "warrior"
+    material: IRON_SWORD
     lore:
       - "§7A balanced melee kit"
       - "§7with sword and armor"
@@ -15,6 +16,7 @@ kits:
     slot: 12
     name: "§aArcher Kit"
     kit: "archer"
+    material: BOW
     lore:
       - "§7Ranged combat kit"
       - "§7with bow and arrows"
@@ -24,6 +26,7 @@ kits:
     slot: 14
     name: "§9Mage Kit"
     kit: "mage"
+    material: BLAZE_ROD
     lore:
       - "§7Magical kit with"
       - "§7potions and enchanted items"

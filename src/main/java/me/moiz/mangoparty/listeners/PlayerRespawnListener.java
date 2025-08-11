@@ -1,6 +1,7 @@
 package me.moiz.mangoparty.listeners;
 
 import me.moiz.mangoparty.MangoParty;
+import me.moiz.mangoparty.models.Duel;
 import me.moiz.mangoparty.models.Match;
 import org.bukkit.GameMode;
 import org.bukkit.entity.Player;
@@ -19,6 +20,16 @@ public class PlayerRespawnListener implements Listener {
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onPlayerRespawn(PlayerRespawnEvent event) {
         Player player = event.getPlayer();
+        
+        // Check if player is in a duel
+        if (plugin.getDuelManager().isInDuel(player)) {
+            // Set respawn location to their current location (death location)
+            // This prevents them from being teleported to world spawn
+            event.setRespawnLocation(player.getLocation());
+            return;
+        }
+        
+        // Handle regular matches
         Match match = plugin.getMatchManager().getPlayerMatch(player);
         
         if (match == null) {
