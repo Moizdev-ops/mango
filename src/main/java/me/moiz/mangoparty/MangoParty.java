@@ -187,5 +187,6 @@ public final class MangoParty extends JavaPlugin {
     public KitEditorGui getKitEditorGui() { return kitEditorGui; }
     public AllowedKitsGui getAllowedKitsGui() { return allowedKitsGui; }
     public SpectatorListener getSpectatorListener() { return spectatorListener; }
+    public PlayerDeathListener getPlayerDeathListener() { return playerDeathListener; }
     public Location getSpawnLocation() { return spawnLocation; }
 }
