@@ -21,10 +21,10 @@ public class PlayerRespawnListener implements Listener {
     }
     
     /**
-     * Handle player respawn with HIGHEST priority to override any other plugins
+     * Handle player respawn with MONITOR priority to ensure it runs after all other plugins
      * This ensures players in duels respawn exactly where they died with the same facing direction
      */
-    @EventHandler(priority = EventPriority.HIGHEST)
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onPlayerRespawn(PlayerRespawnEvent event) {
         Player player = event.getPlayer();
         
@@ -37,11 +37,46 @@ public class PlayerRespawnListener implements Listener {
             if (deathLoc != null) {
                 // Set respawn location to exact death location with preserved yaw/pitch
                 event.setRespawnLocation(deathLoc);
+                
+                // Also schedule an immediate teleport after respawn as a backup
+                final Location finalDeathLoc = deathLoc.clone();
+                plugin.getServer().getScheduler().runTask(plugin, () -> {
+                    if (player.isOnline()) {
+                        player.teleport(finalDeathLoc);
+                        plugin.getLogger().info("Teleported player " + player.getName() + " to death location after respawn");
+                    }
+                });
+                
+                // Also schedule a delayed teleport in case other plugins teleport the player after our immediate teleport
+                plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
+                    if (player.isOnline()) {
+                        player.teleport(finalDeathLoc);
+                        plugin.getLogger().info("Delayed teleport: player " + player.getName() + " to death location");
+                    }
+                }, 5L); // 5 ticks = 0.25 seconds
+                
                 // Remove the stored location to prevent memory leaks
                 duelListener.removeDeathLocation(player.getUniqueId());
             } else {
                 // Fallback if no stored location (shouldn't happen)
                 event.setRespawnLocation(player.getLocation());
+                
+                // Also schedule an immediate teleport after respawn as a backup
+                final Location currentLoc = player.getLocation().clone();
+                plugin.getServer().getScheduler().runTask(plugin, () -> {
+                    if (player.isOnline()) {
+                        player.teleport(currentLoc);
+                        plugin.getLogger().info("Teleported player " + player.getName() + " to current location after respawn (fallback)");
+                    }
+                });
+                
+                // Also schedule a delayed teleport in case other plugins teleport the player after our immediate teleport
+                plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
+                    if (player.isOnline()) {
+                        player.teleport(currentLoc);
+                        plugin.getLogger().info("Delayed teleport: player " + player.getName() + " to current location (fallback)");
+                    }
+                }, 5L); // 5 ticks = 0.25 seconds
             }
             return;
         }
@@ -58,7 +93,24 @@ public class PlayerRespawnListener implements Listener {
         if (match.isPlayerSpectator(player.getUniqueId())) {
             // Set respawn location to their current location (death location)
             // This prevents them from being teleported to world spawn
-            event.setRespawnLocation(player.getLocation());
+            final Location currentLoc = player.getLocation().clone();
+            event.setRespawnLocation(currentLoc);
+            
+            // Also schedule an immediate teleport after respawn as a backup
+            plugin.getServer().getScheduler().runTask(plugin, () -> {
+                if (player.isOnline()) {
+                    player.teleport(currentLoc);
+                    plugin.getLogger().info("Teleported match spectator " + player.getName() + " to death location after respawn");
+                }
+            });
+            
+            // Also schedule a delayed teleport in case other plugins teleport the player after our immediate teleport
+            plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
+                if (player.isOnline()) {
+                    player.teleport(currentLoc);
+                    plugin.getLogger().info("Delayed teleport: match spectator " + player.getName() + " to death location");
+                }
+            }, 5L); // 5 ticks = 0.25 seconds
         }
     }
 }
