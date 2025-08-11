@@ -117,7 +117,19 @@ public class KitManager {
         
         kits.put(name, kit);
         saveKit(kit);
+        
+        // Automatically add the kit to all GUIs
+        plugin.getConfigManager().addKitToGuiConfig(kit, "split", null);
+        plugin.getConfigManager().addKitToGuiConfig(kit, "ffa", null);
+        plugin.getConfigManager().addKitToQueueGuiConfig(kit, "1v1", null);
+        plugin.getConfigManager().addKitToQueueGuiConfig(kit, "2v2", null);
+        plugin.getConfigManager().addKitToQueueGuiConfig(kit, "3v3", null);
+        
+        // Reload GUI configs to reflect changes
+        plugin.getGuiManager().reloadGuiConfigs();
+        
         plugin.getLogger().info("§a⚔️ Created new kit: §e" + name + " §7by §e" + player.getName());
+        player.sendMessage("§aKit '" + name + "' created and added to all GUIs!");
     }
     
     public void saveKit(Kit kit) {

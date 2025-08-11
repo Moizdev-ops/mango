@@ -193,10 +193,8 @@ public class ConfigManager {
         kitsSection.set(kitConfigKey + ".name", "§c§l" + kit.getName());
         kitsSection.set(kitConfigKey + ".kit", kit.getName());
         
-        // Default lore if none exists
-        List<String> defaultLore = new ArrayList<>();
-        defaultLore.add("§7A custom kit created by an admin.");
-        kitsSection.set(kitConfigKey + ".lore", defaultLore);
+        // Set empty lore as requested by user
+        kitsSection.set(kitConfigKey + ".lore", new ArrayList<String>());
 
         // Add customModelData if the kit's icon has it
         if (kit.getIcon() != null && kit.getIcon().hasItemMeta() && kit.getIcon().getItemMeta().hasCustomModelData()) {
@@ -274,11 +272,8 @@ public class ConfigManager {
         kitsSection.set(kitConfigKey + ".material", kit.getIcon() != null ? kit.getIcon().getType().toString() : "IRON_SWORD");
         kitsSection.set(kitConfigKey + ".name", "§c§l" + kit.getName());
         
-        // Default lore with queue placeholder
-        List<String> defaultLore = new ArrayList<>();
-        defaultLore.add("§7Click to queue with this kit.");
-        defaultLore.add("§eQueued: {queued}");
-        kitsSection.set(kitConfigKey + ".lore", defaultLore);
+        // Set empty lore as requested by user
+        kitsSection.set(kitConfigKey + ".lore", new ArrayList<String>());
 
         // Add customModelData if the kit's icon has it
         if (kit.getIcon() != null && kit.getIcon().hasItemMeta() && kit.getIcon().getItemMeta().hasCustomModelData()) {
