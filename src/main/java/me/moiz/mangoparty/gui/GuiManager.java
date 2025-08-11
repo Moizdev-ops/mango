@@ -18,6 +18,7 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.inventory.meta.SkullMeta;
 import me.moiz.mangoparty.models.Arena;
+import java.util.UUID;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -616,10 +617,11 @@ public class GuiManager implements Listener {
         }
         
         // Start the match
-        Player leader = party.getLeader();
-                        if (leader != null) {
-                            plugin.getMatchManager().startMatchPreparation(leader, kit, matchType);
-                        }
+        UUID leaderUUID = party.getLeader();
+        Player leaderPlayer = Bukkit.getPlayer(leaderUUID);
+        if (leaderPlayer != null) {
+            plugin.getMatchManager().startMatchPreparation(leaderPlayer, kit, matchType);
+        }
         player.sendMessage("§aStarting " + matchType + " match with kit: " + kit.getDisplayName());
     }
     
