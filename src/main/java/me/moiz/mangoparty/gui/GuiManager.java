@@ -243,7 +243,6 @@ public class GuiManager implements Listener {
                                 if (hideAttributes) {
                                     meta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES);
                                     meta.addItemFlags(ItemFlag.HIDE_ENCHANTS);
-                                    meta.addItemFlags(ItemFlag.HIDE_POTION_EFFECTS);
                                     meta.addItemFlags(ItemFlag.HIDE_DYE);
                                     meta.addItemFlags(ItemFlag.HIDE_ARMOR_TRIM);
                                 }
@@ -373,7 +372,6 @@ public class GuiManager implements Listener {
                                     if (hideAttributes) {
                                         meta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES);
                                         meta.addItemFlags(ItemFlag.HIDE_ENCHANTS);
-                                        meta.addItemFlags(ItemFlag.HIDE_POTION_EFFECTS);
                                         meta.addItemFlags(ItemFlag.HIDE_DYE);
                                         meta.addItemFlags(ItemFlag.HIDE_ARMOR_TRIM);
                                     }
@@ -405,7 +403,6 @@ public class GuiManager implements Listener {
                                 if (hideAttributes) {
                                     meta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES);
                                     meta.addItemFlags(ItemFlag.HIDE_ENCHANTS);
-                                    meta.addItemFlags(ItemFlag.HIDE_POTION_EFFECTS);
                                 }
                                 
                                 item.setItemMeta(meta);
@@ -619,7 +616,10 @@ public class GuiManager implements Listener {
         }
         
         // Start the match
-        plugin.getMatchManager().startMatchPreparation(party, arena, kit, matchType);
+        Player leader = party.getLeader();
+                        if (leader != null) {
+                            plugin.getMatchManager().startMatchPreparation(leader, kit, matchType);
+                        }
         player.sendMessage("§aStarting " + matchType + " match with kit: " + kit.getDisplayName());
     }
     
@@ -654,7 +654,6 @@ public class GuiManager implements Listener {
         if (hideAttributes) {
             meta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES);
             meta.addItemFlags(ItemFlag.HIDE_ENCHANTS);
-            meta.addItemFlags(ItemFlag.HIDE_POTION_EFFECTS);
             meta.addItemFlags(ItemFlag.HIDE_DYE);
             meta.addItemFlags(ItemFlag.HIDE_ARMOR_TRIM);
         }
