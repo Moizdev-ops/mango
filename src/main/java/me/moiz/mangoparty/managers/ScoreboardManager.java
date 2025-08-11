@@ -272,6 +272,27 @@ public class ScoreboardManager {
     }
     
     /**
+     * Public method to update duel scoreboard for specific players
+     */
+    public void updateDuelScoreboard(Player player1, Player player2, Duel duel) {
+        List<String> lines = scoreboardConfig.getStringList("duel.lines");
+        if (lines.isEmpty()) {
+            // Fallback to global lines if duel-specific lines are not defined
+            lines = scoreboardConfig.getStringList("global.lines");
+        }
+        
+        // Update player1's scoreboard
+        if (player1 != null && player1.isOnline()) {
+            updateDuelPlayerScoreboard(player1, player2, duel, lines);
+        }
+        
+        // Update player2's scoreboard
+        if (player2 != null && player2.isOnline()) {
+            updateDuelPlayerScoreboard(player2, player1, duel, lines);
+        }
+    }
+    
+    /**
      * Update scoreboard for a specific player in a duel
      */
     private void updateDuelPlayerScoreboard(Player player, Player opponent, Duel duel, List<String> lines) {
