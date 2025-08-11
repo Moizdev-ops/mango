@@ -118,14 +118,8 @@ public class PlayerDeathListener implements Listener {
         
         // Handle the death manually
         handlePlayerDeath(player, match);
-                    
-                    // Update scoreboard
-                    Match currentMatch2 = plugin.getMatchManager().getPlayerMatch(player);
-                    if (currentMatch2 != null) {
-                        plugin.getScoreboardManager().updateMatchScoreboards(currentMatch2);
-                    }
-                }
-            }
-        }.runTaskLater(plugin, 5L); // Increased delay to 5 ticks
+        
+        // Update scoreboard
+        plugin.getScoreboardManager().updateMatchScoreboards(match);
     }
 }
