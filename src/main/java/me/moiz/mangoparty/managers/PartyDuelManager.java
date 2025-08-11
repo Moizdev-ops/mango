@@ -181,6 +181,9 @@ public class PartyDuelManager {
         // Start the match
         plugin.getMatchManager().startPartyVsPartyMatch(match, challengerParty, challengedParty);
         
+        // Start scoreboards
+        plugin.getScoreboardManager().startPartyDuelScoreboards(match);
+        
         // Get customizable accept message
         String acceptMessage = plugin.getConfig().getString("messages.party-duel.challenge-accepted", 
             "§aDuel accepted! Starting match with kit: §f{kit}");

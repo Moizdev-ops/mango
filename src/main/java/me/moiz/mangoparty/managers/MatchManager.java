@@ -377,8 +377,14 @@ public class MatchManager {
             plugin.getKitManager().giveKit(player, match.getKit());
         }
         
-        // Start scoreboards
-        plugin.getScoreboardManager().startMatchScoreboards(match);
+        // Start scoreboards based on match type
+        if (match.getMatchType().startsWith("queue_")) {
+            plugin.getScoreboardManager().startQueueMatchScoreboards(match);
+        } else if (match.getMatchType().equals("party_duel")) {
+            plugin.getScoreboardManager().startPartyDuelScoreboards(match);
+        } else {
+            plugin.getScoreboardManager().startMatchScoreboards(match);
+        }
         
         BukkitTask countdownTask = new BukkitRunnable() {
             int countdown = 5;
@@ -490,6 +496,9 @@ public class MatchManager {
         
         // Regenerate arena
         plugin.getArenaManager().pasteSchematic(match.getArena());
+        
+        // Cancel scoreboard update task
+        plugin.getScoreboardManager().cancelTask(match.getId());
         
         // Remove match
         activeMatches.remove(match.getId());

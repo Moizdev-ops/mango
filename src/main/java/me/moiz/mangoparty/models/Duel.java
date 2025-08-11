@@ -56,6 +56,13 @@ public class Duel {
     }
     
     /**
+     * Get the duration of the duel in milliseconds
+     */
+    public long getDuration() {
+        return System.currentTimeMillis() - startTime;
+    }
+    
+    /**
      * Increment player 1 wins
      */
     public void incrementPlayer1Wins() {

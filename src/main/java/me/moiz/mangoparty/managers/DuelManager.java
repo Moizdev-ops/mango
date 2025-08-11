@@ -168,6 +168,9 @@ public class DuelManager {
         
         // Continue with the duel acceptance process
         processDuelAcceptance(duel, accepter, challenger);
+        
+        // Update scoreboard for both players
+        plugin.getScoreboardManager().updateDuelScoreboard(challenger, accepter, duel);
     }
     
     /**
@@ -280,6 +283,9 @@ public class DuelManager {
                             plugin.getConfig().getString("messages.player-duel.challenge-accepted")
                             .replace("{kit}", kit.getDisplayName())
                             .replace("{target}", accepter.getName()));
+        
+        // Start scoreboards for the duel
+        plugin.getScoreboardManager().startDuelScoreboards(duel);
         
         // Start the duel
         startDuel(duel);
@@ -678,6 +684,9 @@ public class DuelManager {
                 
                 // Clear any remaining titles
                 player1.sendTitle("", "", 0, 0, 0);
+                
+                // Remove scoreboard
+                plugin.getScoreboardManager().removeScoreboard(player1);
             }
             
             if (player2.isOnline()) {
@@ -692,12 +701,18 @@ public class DuelManager {
                 
                 // Clear any remaining titles
                 player2.sendTitle("", "", 0, 0, 0);
+                
+                // Remove scoreboard
+                plugin.getScoreboardManager().removeScoreboard(player2);
             }
             
             // Remove duel
             activeDuels.remove(duel.getId());
             playerDuels.remove(player1.getUniqueId());
             playerDuels.remove(player2.getUniqueId());
+            
+            // Cancel scoreboard update task
+            plugin.getScoreboardManager().cancelTask(duel.getId());
             
             // Cancel countdown task if exists
             BukkitTask task = countdownTasks.remove(duel.getId());
