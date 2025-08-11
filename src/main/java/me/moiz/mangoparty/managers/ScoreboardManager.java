@@ -53,7 +53,7 @@ public class ScoreboardManager {
      */
     public void startMatchScoreboards(Match match) {
         String matchType = match.getMatchType().toLowerCase();
-        String configSection;
+        final String configSection;
         
         // Determine which scoreboard config to use based on match type
         if (matchType.equals("ffa")) {
@@ -131,11 +131,13 @@ public class ScoreboardManager {
      */
     public void startQueueMatchScoreboards(Match match) {
         String matchType = match.getMatchType().toLowerCase();
-        String configSection = "queue_" + matchType;
+        final String configSection;
         
         // Fallback if config section doesn't exist
-        if (!scoreboardConfig.contains(configSection)) {
+        if (!scoreboardConfig.contains("queue_" + matchType)) {
             configSection = "queue_1v1"; // Default
+        } else {
+            configSection = "queue_" + matchType;
         }
         
         // Get title from config
