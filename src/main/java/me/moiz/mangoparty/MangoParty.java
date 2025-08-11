@@ -36,6 +36,7 @@ public final class MangoParty extends JavaPlugin {
     private KitRulesListener kitRulesListener;
     private ArenaBoundsListener arenaBoundsListener;
     private DuelListener duelListener;
+    private MatchCountdownListener matchCountdownListener;
     
     private Location spawnLocation;
     
@@ -67,6 +68,7 @@ public final class MangoParty extends JavaPlugin {
         kitRulesListener = new KitRulesListener(this);
         arenaBoundsListener = new ArenaBoundsListener(this);
         duelListener = new DuelListener(this);
+        matchCountdownListener = new MatchCountdownListener(this);
         
         // Register listeners
         Bukkit.getPluginManager().registerEvents(playerConnectionListener, this);
@@ -76,6 +78,7 @@ public final class MangoParty extends JavaPlugin {
         Bukkit.getPluginManager().registerEvents(kitRulesListener, this);
         Bukkit.getPluginManager().registerEvents(arenaBoundsListener, this);
         Bukkit.getPluginManager().registerEvents(duelListener, this);
+        Bukkit.getPluginManager().registerEvents(matchCountdownListener, this);
         
         // Register commands
         registerCommands();
@@ -187,6 +190,12 @@ public final class MangoParty extends JavaPlugin {
     public KitEditorGui getKitEditorGui() { return kitEditorGui; }
     public AllowedKitsGui getAllowedKitsGui() { return allowedKitsGui; }
     public SpectatorListener getSpectatorListener() { return spectatorListener; }
-    public PlayerDeathListener getPlayerDeathListener() { return playerDeathListener; }
+    public PlayerDeathListener getPlayerDeathListener() {
+        return playerDeathListener;
+    }
+    
+    public MatchCountdownListener getMatchCountdownListener() {
+        return matchCountdownListener;
+    }
     public Location getSpawnLocation() { return spawnLocation; }
 }

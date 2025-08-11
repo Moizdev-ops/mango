@@ -65,25 +65,46 @@ public class PlayerDeathListener implements Listener {
         // Send elimination message
         player.sendTitle("§c§lELIMINATED", "§7You are now spectating", 10, 40, 10);
         
+        // Save inventories before clearing them
+        if (!savedInventories.containsKey(player.getUniqueId())) {
+            saveInventory(player);
+        }
+        if (killer != null && !savedInventories.containsKey(killer.getUniqueId())) {
+            saveInventory(killer);
+        }
+        
+        // Instant teleport to arena spawn (1ms)
+        new BukkitRunnable() {
+            @Override
+            public void run() {
+                // Teleport player back to arena
+                Location arenaSpawn = match.getArena().getSpawnLocation();
+                player.teleport(arenaSpawn);
+                
+                // Clear inventories of both players
+                player.getInventory().clear();
+                player.getInventory().setArmorContents(null);
+                player.getInventory().setItemInOffHand(null);
+                player.updateInventory();
+                
+                if (killer != null) {
+                    // Teleport killer back to arena
+                    killer.teleport(arenaSpawn);
+                    
+                    killer.getInventory().clear();
+                    killer.getInventory().setArmorContents(null);
+                    killer.getInventory().setItemInOffHand(null);
+                    killer.updateInventory();
+                }
+            }
+        }.runTaskLater(plugin, 1L); // 1 tick = ~50ms for instant teleport
+        
         // Announce elimination to all match players
         for (Player matchPlayer : match.getAllPlayers()) {
             if (!matchPlayer.equals(player)) {
                 String killerName = killer != null ? killer.getName() : "unknown causes";
                 matchPlayer.sendMessage("§c" + player.getName() + " §7was eliminated by §c" + killerName);
             }
-        }
-        
-        // Clear inventories of both players
-        player.getInventory().clear();
-        player.getInventory().setArmorContents(null);
-        player.getInventory().setItemInOffHand(null);
-        player.updateInventory();
-        
-        if (killer != null) {
-            killer.getInventory().clear();
-            killer.getInventory().setArmorContents(null);
-            killer.getInventory().setItemInOffHand(null);
-            killer.updateInventory();
         }
         
         // Start new round after 2 seconds
