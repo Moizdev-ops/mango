@@ -136,10 +136,6 @@ public final class MangoParty extends JavaPlugin {
         // Duel commands
         getCommand("duel").setExecutor(new DuelCommand(this));
         getCommand("duel").setTabCompleter(new DuelCommand(this));
-        getCommand("duelaccept").setExecutor(new DuelAcceptCommand(this));
-        getCommand("duelaccept").setTabCompleter(new DuelAcceptCommand(this));
-        getCommand("dueldecline").setExecutor(new DuelDeclineCommand(this));
-        getCommand("dueldecline").setTabCompleter(new DuelDeclineCommand(this));
         
         // Duel callback command (internal)
         getCommand("mangoduelcallback").setExecutor(new MangoDuelCallbackCommand(this));
