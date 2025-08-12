@@ -425,6 +425,9 @@ public class ArenaManager {
             com.sk89q.worldedit.world.World world = BukkitAdapter.adapt(instance.getCorner1().getWorld());
             plugin.getLogger().info("Adapted Bukkit world to WorldEdit world: " + world.getName());
             
+            // Create a final copy of the clipboard for use in the lambda
+            final Clipboard finalClipboard = clipboard;
+            
             // Use async operation for better performance
             Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
                 try (EditSession editSession = WorldEdit.getInstance().newEditSession(world)) {
@@ -438,7 +441,7 @@ public class ArenaManager {
                     // Set fast mode to true for better performance
                     editSession.setFastMode(true);
                     
-                    Operation operation = new ClipboardHolder(clipboard)
+                    Operation operation = new ClipboardHolder(finalClipboard)
                         .createPaste(editSession)
                         .to(pasteLocation)
                         .ignoreAirBlocks(true) // Ignore air blocks for better performance
@@ -645,6 +648,9 @@ public class ArenaManager {
             
             com.sk89q.worldedit.world.World world = BukkitAdapter.adapt(arena.getCorner1().getWorld());
             
+            // Create a final copy of the clipboard for use in the lambda
+            final Clipboard finalClipboard = clipboard;
+            
             // Use async operation for better performance
             Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
                 try (EditSession editSession = WorldEdit.getInstance().newEditSession(world)) {
@@ -658,7 +664,7 @@ public class ArenaManager {
                     // Set fast mode to true for better performance
                     editSession.setFastMode(true);
                     
-                    Operation operation = new ClipboardHolder(clipboard)
+                    Operation operation = new ClipboardHolder(finalClipboard)
                         .createPaste(editSession)
                         .to(pasteLocation)
                         .ignoreAirBlocks(true) // Ignore air blocks for better performance
