@@ -62,8 +62,8 @@ public class DuelListener implements Listener {
         
         // Check if player is in a duel and would die from this damage
         if (duelManager.isInDuel(player) && player.getHealth() - event.getFinalDamage() <= 0) {
-            // Let the player actually die to get death animation/effects
-            // This will trigger the PlayerDeathEvent which will handle respawn location
+            // Cancel the damage event to prevent actual death
+            event.setCancelled(true);
             
             // Store death location with exact yaw/pitch preserved
             final Location deathLocation = player.getLocation().clone();
@@ -73,7 +73,23 @@ public class DuelListener implements Listener {
             // Store location for respawn
             deathLocations.put(player.getUniqueId(), deathLocation);
             
-            // Let the natural death occur and PlayerDeathEvent will handle it
+            // Set player health to 0 to trigger death animation
+            player.setHealth(0);
+            
+            // Schedule a task to teleport player back to death location and restore health
+            new BukkitRunnable() {
+                @Override
+                public void run() {
+                    if (player.isOnline()) {
+                        // Teleport player back to death location
+                        player.teleport(deathLocation);
+                        // Set health to full
+                        player.setHealth(20.0);
+                        // Handle the death in DuelManager
+                        duelManager.handlePlayerDeath(player);
+                    }
+                }
+            }.runTaskLater(plugin, 1L); // Run 1 tick later
         }
     }
     
@@ -88,23 +104,37 @@ public class DuelListener implements Listener {
         
         // Check if player is in a duel
         if (duelManager.isInDuel(player)) {
-            // Store exact death location with yaw/pitch preserved
-            Location deathLoc = player.getLocation().clone();
-            // Slightly raise Y coordinate to avoid spawning inside blocks
-            deathLoc.setY(deathLoc.getY() + 0.1);
-            deathLocations.put(player.getUniqueId(), deathLoc);
-            
             // Prevent drops and exp loss
             event.setKeepInventory(true);
             event.setKeepLevel(true);
             event.getDrops().clear();
             event.setDroppedExp(0);
             
-            // Let the death animation play out naturally
-            // We won't cancel the death event to allow death animation/effects
+            // Get the stored death location
+            Location deathLoc = deathLocations.get(player.getUniqueId());
+            if (deathLoc == null) {
+                // If no stored location, use current location
+                deathLoc = player.getLocation().clone();
+                // Slightly raise Y coordinate to avoid spawning inside blocks
+                deathLoc.setY(deathLoc.getY() + 0.1);
+                deathLocations.put(player.getUniqueId(), deathLoc);
+            }
             
-            // Handle the death manually (this is a backup in case the damage event handler fails)
-            duelManager.handlePlayerDeath(player);
+            // We'll let the respawn event handle teleportation back to death location
+            // The damage event handler should have already called duelManager.handlePlayerDeath
+            // This is just a backup in case something went wrong
+            final Location finalDeathLoc = deathLoc.clone();
+            new BukkitRunnable() {
+                @Override
+                public void run() {
+                    if (player.isOnline()) {
+                        // Ensure player is teleported back to death location
+                        player.teleport(finalDeathLoc);
+                        // Set health to full
+                        player.setHealth(20.0);
+                    }
+                }
+            }.runTaskLater(plugin, 1L); // Run 1 tick later
         }
     }
     
