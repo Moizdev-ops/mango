@@ -397,6 +397,8 @@ public class ArenaManager {
                 return false;
             }
             
+            // We'll always use the original arena's schematic for instances, not create a new one
+            
             com.sk89q.worldedit.world.World world = BukkitAdapter.adapt(instance.getCorner1().getWorld());
             plugin.getLogger().info("Adapted Bukkit world to WorldEdit world: " + world.getName());
             
@@ -584,7 +586,15 @@ public class ArenaManager {
     public boolean pasteSchematic(Arena arena) {
         try {
             File schematicsDir = new File(plugin.getDataFolder(), "schematics");
-            File schematicFile = new File(schematicsDir, arena.getName() + ".schem");
+            File schematicFile;
+            
+            // For instances, use the original arena's schematic
+            if (arena.isInstance() && arena.getOriginalArena() != null) {
+                schematicFile = new File(schematicsDir, arena.getOriginalArena() + ".schem");
+                plugin.getLogger().info("Using original arena schematic for instance: " + arena.getOriginalArena() + ".schem");
+            } else {
+                schematicFile = new File(schematicsDir, arena.getName() + ".schem");
+            }
             
             if (!schematicFile.exists()) {
                 plugin.getLogger().warning("Schematic file not found: " + schematicFile.getPath());

@@ -66,6 +66,18 @@ buttons:
     material: "PAPER"
     name: "§aGenerate Schematic"
     lore:
+      - "§7Click to generate a schematic"
+      - "§7for this arena"
+    customModelData: 0
+    
+  delete_arena:
+    slot: 22
+    material: "BARRIER"
+    name: "§4Delete Arena"
+    lore:
+      - "§7Click to delete this arena"
+      - "§cWARNING: This action cannot be undone!"
+    customModelData: 0
       - "§7Click to save arena schematic"
       - "§7Requires both corners to be set"
     customModelData: 0

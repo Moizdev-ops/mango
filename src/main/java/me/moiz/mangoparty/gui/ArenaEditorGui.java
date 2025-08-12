@@ -162,10 +162,13 @@ public class ArenaEditorGui implements Listener {
     }
     
     private String processStatusPlaceholder(String line, String buttonKey, Arena arena) {
+        // Add instance indicator for instance arenas
+        String instanceInfo = arena.isInstance() ? " §6[Instance]" : "";
+        
         switch (buttonKey) {
             case "spawn1":
                 if (line.contains("{spawn1_status}")) {
-                    return line.replace("{spawn1_status}", arena.getSpawn1() != null ? "§aSet" : "§cNot Set");
+                    return line.replace("{spawn1_status}", arena.getSpawn1() != null ? "§aSet" + instanceInfo : "§cNot Set");
                 } else if (line.contains("{spawn1_coords}") && arena.getSpawn1() != null) {
                     return line.replace("{spawn1_coords}", String.format("§7X: %.1f, Y: %.1f, Z: %.1f", 
                             arena.getSpawn1().getX(), arena.getSpawn1().getY(), arena.getSpawn1().getZ()));
@@ -173,7 +176,7 @@ public class ArenaEditorGui implements Listener {
                 break;
             case "spawn2":
                 if (line.contains("{spawn2_status}")) {
-                    return line.replace("{spawn2_status}", arena.getSpawn2() != null ? "§aSet" : "§cNot Set");
+                    return line.replace("{spawn2_status}", arena.getSpawn2() != null ? "§aSet" + instanceInfo : "§cNot Set");
                 } else if (line.contains("{spawn2_coords}") && arena.getSpawn2() != null) {
                     return line.replace("{spawn2_coords}", String.format("§7X: %.1f, Y: %.1f, Z: %.1f", 
                             arena.getSpawn2().getX(), arena.getSpawn2().getY(), arena.getSpawn2().getZ()));
@@ -181,7 +184,7 @@ public class ArenaEditorGui implements Listener {
                 break;
             case "center":
                 if (line.contains("{center_status}")) {
-                    return line.replace("{center_status}", arena.getCenter() != null ? "§aSet" : "§cNot Set");
+                    return line.replace("{center_status}", arena.getCenter() != null ? "§aSet" + instanceInfo : "§cNot Set");
                 } else if (line.contains("{center_coords}") && arena.getCenter() != null) {
                     return line.replace("{center_coords}", String.format("§7X: %.1f, Y: %.1f, Z: %.1f", 
                             arena.getCenter().getX(), arena.getCenter().getY(), arena.getCenter().getZ()));
@@ -189,7 +192,7 @@ public class ArenaEditorGui implements Listener {
                 break;
             case "corner1":
                 if (line.contains("{corner1_status}")) {
-                    return line.replace("{corner1_status}", arena.getCorner1() != null ? "§aSet" : "§cNot Set");
+                    return line.replace("{corner1_status}", arena.getCorner1() != null ? "§aSet" + instanceInfo : "§cNot Set");
                 } else if (line.contains("{corner1_coords}") && arena.getCorner1() != null) {
                     return line.replace("{corner1_coords}", String.format("§7X: %.1f, Y: %.1f, Z: %.1f", 
                             arena.getCorner1().getX(), arena.getCorner1().getY(), arena.getCorner1().getZ()));
@@ -197,7 +200,7 @@ public class ArenaEditorGui implements Listener {
                 break;
             case "corner2":
                 if (line.contains("{corner2_status}")) {
-                    return line.replace("{corner2_status}", arena.getCorner2() != null ? "§aSet" : "§cNot Set");
+                    return line.replace("{corner2_status}", arena.getCorner2() != null ? "§aSet" + instanceInfo : "§cNot Set");
                 } else if (line.contains("{corner2_coords}") && arena.getCorner2() != null) {
                     return line.replace("{corner2_coords}", String.format("§7X: %.1f, Y: %.1f, Z: %.1f", 
                             arena.getCorner2().getX(), arena.getCorner2().getY(), arena.getCorner2().getZ()));
@@ -297,6 +300,26 @@ public class ArenaEditorGui implements Listener {
         } else if ("allowed_kits".equals(buttonType)) {
             // Open the allowed kits GUI
             plugin.getAllowedKitsGui().openAllowedKitsGui(player, arenaName);
+        } else if ("delete_arena".equals(buttonType)) {
+            // Delete the arena
+            Arena arena = plugin.getArenaManager().getArena(arenaName);
+            if (arena == null) {
+                player.sendMessage("§cArena not found!");
+                return;
+            }
+            
+            // Confirm deletion
+            player.sendMessage("§cAre you sure you want to delete arena " + arenaName + "? Type /mango arena confirm to confirm deletion.");
+            player.closeInventory();
+            
+            // Store pending deletion
+            plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
+                if (player.isOnline()) {
+                    plugin.getArenaManager().deleteArena(arenaName);
+                    player.sendMessage("§aArena " + arenaName + " has been deleted.");
+                    openArenaListGui(player);
+                }
+            }, 60L); // 3-second delay for confirmation
         } else {
             // Set up location setting
             pendingLocationSets.put(player.getUniqueId(), buttonType);
