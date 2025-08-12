@@ -74,6 +74,7 @@ public class MatchCountdownListener implements Listener {
     
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onEntityDamage(EntityDamageEvent event) {
+        // Only handle player damage
         if (!(event.getEntity() instanceof Player)) {
             return;
         }
@@ -81,20 +82,20 @@ public class MatchCountdownListener implements Listener {
         Player player = (Player) event.getEntity();
         Match match = plugin.getMatchManager().getPlayerMatch(player);
         
-        // Check if player is in a match that's in preparation state
-        if (match != null && match.getState() == Match.MatchState.PREPARING || 
-            match != null && match.getState() == Match.MatchState.COUNTDOWN) {
+        // Prevent all damage during countdown or preparation
+        if (match != null && 
+            (match.getState() == Match.MatchState.PREPARING || match.getState() == Match.MatchState.COUNTDOWN)) {
             
-            // Prevent fire damage during countdown
-            if (event.getCause() == EntityDamageEvent.DamageCause.FIRE || 
-                event.getCause() == EntityDamageEvent.DamageCause.FIRE_TICK || 
-                event.getCause() == EntityDamageEvent.DamageCause.LAVA) {
-                
-                // Cancel the damage event
-                event.setCancelled(true);
-                
-                // Extinguish the player
-                player.setFireTicks(0);
+            // Make player invincible during countdown
+            player.setInvulnerable(true);
+            event.setCancelled(true);
+            
+            // Specifically for fire damage, also extinguish the player
+            EntityDamageEvent.DamageCause cause = event.getCause();
+            if (cause == EntityDamageEvent.DamageCause.FIRE ||
+                cause == EntityDamageEvent.DamageCause.FIRE_TICK ||
+                cause == EntityDamageEvent.DamageCause.LAVA) {
+                player.setFireTicks(0); // Extinguish player
             }
         }
     }

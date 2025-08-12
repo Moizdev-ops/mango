@@ -38,6 +38,14 @@ public class PlayerDeathListener implements Listener {
         
         Player player = (Player) event.getEntity();
         
+        // Only handle players in duels or matches
+        boolean isInDuel = plugin.getDuelManager().isInDuel(player);
+        boolean isInMatch = plugin.getMatchManager().getPlayerMatch(player) != null;
+        
+        if (!isInDuel && !isInMatch) {
+            return; // Let vanilla death handling work for players not in duels/matches
+        }
+        
         // Check if player is invincible
         if (invincibilityTimers.containsKey(player.getUniqueId()) && 
             System.currentTimeMillis() < invincibilityTimers.get(player.getUniqueId())) {
@@ -51,11 +59,11 @@ public class PlayerDeathListener implements Listener {
             event.setCancelled(true);
             
             // Check if player is in a duel
-            if (plugin.getDuelManager().isInDuel(player)) {
+            if (isInDuel) {
                 handleDuelPlayerDeath(player);
             }
             // Check if player is in a party match
-            else if (plugin.getMatchManager().getPlayerMatch(player) != null) {
+            else if (isInMatch) {
                 Match match = plugin.getMatchManager().getPlayerMatch(player);
                 handlePartyPlayerDeath(player, match);
             }

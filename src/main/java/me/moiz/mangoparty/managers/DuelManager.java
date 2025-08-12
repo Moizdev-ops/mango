@@ -57,6 +57,13 @@ public class DuelManager {
             return;
         }
         
+        // Check if target is in a party
+        if (plugin.getPartyManager().getPlayerParty(target.getUniqueId()) != null) {
+            challenger.sendMessage(plugin.getConfig().getString("messages.prefix") + 
+                                 "§cYou cannot duel a player who is in a party!");
+            return;
+        }
+        
         // Check if there's already a pending duel
         if (pendingDuels.containsKey(target.getUniqueId())) {
             challenger.sendMessage(plugin.getConfig().getString("messages.prefix") + 
@@ -427,9 +434,13 @@ public class DuelManager {
         plugin.getKitManager().giveKit(player1, kit);
         plugin.getKitManager().giveKit(player2, kit);
         
-        // Set game mode to adventure during countdown
+        // Set game mode to adventure and make players invincible during countdown
         player1.setGameMode(GameMode.ADVENTURE);
         player2.setGameMode(GameMode.ADVENTURE);
+        
+        // Make players invincible during countdown
+        player1.setInvulnerable(true);
+        player2.setInvulnerable(true);
         
         // Prevent movement and attacking during countdown
         player1.setWalkSpeed(0.0f);
@@ -528,6 +539,7 @@ public class DuelManager {
             player1.playSound(player1.getLocation(), Sound.BLOCK_NOTE_BLOCK_PLING, 1.0f, 2.0f);
             player1.setGameMode(GameMode.SURVIVAL);
             player1.setWalkSpeed(0.2f); // Reset walk speed to normal (default is 0.2)
+            player1.setInvulnerable(false); // Remove invincibility when duel starts
         }
         
         if (player2.isOnline()) {
@@ -535,6 +547,7 @@ public class DuelManager {
             player2.playSound(player2.getLocation(), Sound.BLOCK_NOTE_BLOCK_PLING, 1.0f, 2.0f);
             player2.setGameMode(GameMode.SURVIVAL);
             player2.setWalkSpeed(0.2f); // Reset walk speed to normal (default is 0.2)
+            player2.setInvulnerable(false); // Remove invincibility when duel starts
         }
         
         // Clear titles after 1 second
@@ -589,17 +602,17 @@ public class DuelManager {
         // Store winner UUID for lambda to avoid effectively final issue
         final UUID winnerUUID = winner.getUniqueId();
         
-        // Wait 2 seconds before proceeding to next round
-        Bukkit.getScheduler().runTaskLater(plugin, () -> {
-            // Check if duel is over
-            if (duel.getPlayer1Wins() >= duel.getRoundsToWin() || duel.getPlayer2Wins() >= duel.getRoundsToWin()) {
-                // Duel is over
-                endDuel(duel, winnerUUID);
-            } else {
+        // Check if duel is over
+        if (duel.getPlayer1Wins() >= duel.getRoundsToWin() || duel.getPlayer2Wins() >= duel.getRoundsToWin()) {
+            // Duel is over - skip delay on final round
+            endDuel(duel, winnerUUID);
+        } else {
+            // Wait 2 seconds before proceeding to next round
+            Bukkit.getScheduler().runTaskLater(plugin, () -> {
                 // Prepare for next round
                 prepareNextRound(duel);
-            }
-        }, 40L); // 40 ticks = 2 seconds
+            }, 40L); // 40 ticks = 2 seconds
+        }
     }
     
     /**
@@ -736,15 +749,17 @@ public class DuelManager {
         
         duel.setState(Duel.DuelState.COUNTDOWN);
         
-        // Set game mode to adventure during countdown
+        // Set game mode to adventure and make players invincible during countdown
         if (player1.isOnline()) {
             player1.setGameMode(GameMode.ADVENTURE);
             player1.setWalkSpeed(0.0f); // Prevent movement during countdown
+            player1.setInvulnerable(true); // Make player invincible during countdown
         }
         
         if (player2.isOnline()) {
             player2.setGameMode(GameMode.ADVENTURE);
             player2.setWalkSpeed(0.0f); // Prevent movement during countdown
+            player2.setInvulnerable(true); // Make player invincible during countdown
         }
         
         BukkitTask countdownTask = new BukkitRunnable() {

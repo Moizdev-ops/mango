@@ -201,10 +201,11 @@ public class MatchManager {
                     }
                     countdown--;
                 } else {
-                    // Unfreeze players
+                    // Unfreeze players and remove invincibility
                     for (Player player : players) {
                         if (player.isOnline()) {
                             player.setWalkSpeed(0.2f); // Default walk speed
+                            player.setInvulnerable(false); // Remove invincibility when match starts
                             player.sendTitle("§c§lFIGHT!", "", 0, 20, 0);
                         }
                     }
@@ -236,10 +237,11 @@ public class MatchManager {
                     }
                     countdown--;
                 } else {
-                    // Unfreeze players
+                    // Unfreeze players and remove invincibility
                     for (Player player : players) {
                         if (player.isOnline()) {
                             player.setWalkSpeed(0.2f); // Default walk speed
+                            player.setInvulnerable(false); // Remove invincibility when match starts
                             player.sendTitle("§c§lFIGHT!", "", 0, 20, 0);
                         }
                     }
