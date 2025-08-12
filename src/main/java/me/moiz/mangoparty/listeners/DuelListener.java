@@ -3,6 +3,7 @@ package me.moiz.mangoparty.listeners;
 import me.moiz.mangoparty.MangoParty;
 import me.moiz.mangoparty.managers.DuelManager;
 import me.moiz.mangoparty.models.Duel;
+import me.moiz.mangoparty.models.Match;
 import org.bukkit.Location;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
