@@ -454,13 +454,43 @@ public class DuelManager {
                 } else {
                     // Save inventories
                     if (player1.isOnline() && player2.isOnline()) {
-                        // Save player inventories with proper cloning for all rounds
-                        duel.setPlayer1Inventory(player1.getInventory().getContents().clone());
-                        duel.setPlayer1Armor(player1.getInventory().getArmorContents().clone());
-                        duel.setPlayer1Offhand(player1.getInventory().getItemInOffHand().clone());
-                        duel.setPlayer2Inventory(player2.getInventory().getContents().clone());
-                        duel.setPlayer2Armor(player2.getInventory().getArmorContents().clone());
-                        duel.setPlayer2Offhand(player2.getInventory().getItemInOffHand().clone());
+                        // Create deep copies of inventory contents to preserve organization
+                        ItemStack[] player1Contents = new ItemStack[player1.getInventory().getContents().length];
+                        ItemStack[] player1Armor = new ItemStack[player1.getInventory().getArmorContents().length];
+                        ItemStack player1Offhand = player1.getInventory().getItemInOffHand().clone();
+                        
+                        ItemStack[] player2Contents = new ItemStack[player2.getInventory().getContents().length];
+                        ItemStack[] player2Armor = new ItemStack[player2.getInventory().getArmorContents().length];
+                        ItemStack player2Offhand = player2.getInventory().getItemInOffHand().clone();
+                        
+                        // Deep copy each item to preserve organization
+                        for (int i = 0; i < player1.getInventory().getContents().length; i++) {
+                            ItemStack item = player1.getInventory().getContents()[i];
+                            player1Contents[i] = (item != null) ? item.clone() : null;
+                        }
+                        
+                        for (int i = 0; i < player1.getInventory().getArmorContents().length; i++) {
+                            ItemStack item = player1.getInventory().getArmorContents()[i];
+                            player1Armor[i] = (item != null) ? item.clone() : null;
+                        }
+                        
+                        for (int i = 0; i < player2.getInventory().getContents().length; i++) {
+                            ItemStack item = player2.getInventory().getContents()[i];
+                            player2Contents[i] = (item != null) ? item.clone() : null;
+                        }
+                        
+                        for (int i = 0; i < player2.getInventory().getArmorContents().length; i++) {
+                            ItemStack item = player2.getInventory().getArmorContents()[i];
+                            player2Armor[i] = (item != null) ? item.clone() : null;
+                        }
+                        
+                        // Save the deep copies to the duel object
+                        duel.setPlayer1Inventory(player1Contents);
+                        duel.setPlayer1Armor(player1Armor);
+                        duel.setPlayer1Offhand(player1Offhand);
+                        duel.setPlayer2Inventory(player2Contents);
+                        duel.setPlayer2Armor(player2Armor);
+                        duel.setPlayer2Offhand(player2Offhand);
                         
                         // Notify players that their inventory has been saved
                         player1.sendMessage("§aYour inventory has been saved for all rounds!");
@@ -597,6 +627,9 @@ public class DuelManager {
             player2.sendMessage(roundResult);
         }
         
+        // Clear all entities and drops in the arena
+        clearArenaEntities(arena);
+        
         // Regenerate arena
         plugin.getArenaManager().pasteSchematic(arena);
         
@@ -608,6 +641,9 @@ public class DuelManager {
             if (player1.isOnline()) {
                 // Reset invulnerability
                 player1.setInvulnerable(false);
+                
+                // Clear all potion effects
+                player1.getActivePotionEffects().forEach(effect -> player1.removePotionEffect(effect.getType()));
                 
                 player1.teleport(arena.getSpawn1());
                 player1.setHealth(20.0);
@@ -630,6 +666,9 @@ public class DuelManager {
                 // Reset invulnerability
                 player2.setInvulnerable(false);
                 
+                // Clear all potion effects
+                player2.getActivePotionEffects().forEach(effect -> player2.removePotionEffect(effect.getType()));
+                
                 player2.teleport(arena.getSpawn2());
                 player2.setHealth(20.0);
                 player2.setFoodLevel(20);
@@ -650,6 +689,42 @@ public class DuelManager {
             // Start countdown for next round
             startNextRoundCountdown(duel);
         }, 20L); // 1 second delay
+    }
+    
+    /**
+     * Clear all entities and drops within an arena's boundaries
+     */
+    private void clearArenaEntities(Arena arena) {
+        if (arena == null || arena.getCorner1() == null || arena.getCorner2() == null) {
+            return;
+        }
+        
+        // Get arena boundaries
+        Location corner1 = arena.getCorner1();
+        Location corner2 = arena.getCorner2();
+        double minX = Math.min(corner1.getX(), corner2.getX());
+        double minY = Math.min(corner1.getY(), corner2.getY());
+        double minZ = Math.min(corner1.getZ(), corner2.getZ());
+        double maxX = Math.max(corner1.getX(), corner2.getX());
+        double maxY = Math.max(corner1.getY(), corner2.getY());
+        double maxZ = Math.max(corner1.getZ(), corner2.getZ());
+        
+        // Get all entities in the world
+        corner1.getWorld().getEntities().forEach(entity -> {
+            // Skip players
+            if (entity instanceof Player) {
+                return;
+            }
+            
+            // Check if entity is within arena boundaries
+            Location loc = entity.getLocation();
+            if (loc.getX() >= minX && loc.getX() <= maxX &&
+                loc.getY() >= minY && loc.getY() <= maxY &&
+                loc.getZ() >= minZ && loc.getZ() <= maxZ) {
+                // Remove the entity
+                entity.remove();
+            }
+        });
     }
     
     /**

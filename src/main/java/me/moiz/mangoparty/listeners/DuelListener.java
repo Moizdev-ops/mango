@@ -51,6 +51,7 @@ public class DuelListener implements Listener {
     
     /**
      * Handle fatal damage to players in duels
+     * This implementation simulates death without affecting vanilla stats
      */
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onPlayerDamage(EntityDamageEvent event) {
@@ -73,8 +74,8 @@ public class DuelListener implements Listener {
             // Store location for respawn
             deathLocations.put(player.getUniqueId(), deathLocation);
             
-            // Set player health to 0 to trigger death animation
-            player.setHealth(0);
+            // Play death animation without actually killing the player
+            player.playEffect(EntityEffect.DEATH);
             
             // Schedule a task to teleport player back to death location and restore health
             new BukkitRunnable() {
