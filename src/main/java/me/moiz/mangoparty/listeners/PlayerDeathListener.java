@@ -1,6 +1,7 @@
 package me.moiz.mangoparty.listeners;
 
 import me.moiz.mangoparty.MangoParty;
+import me.moiz.mangoparty.models.Duel;
 import me.moiz.mangoparty.models.Match;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
@@ -11,6 +12,7 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.potion.PotionEffect;
 import org.bukkit.scheduler.BukkitRunnable;
 
 import java.util.HashMap;
@@ -22,6 +24,7 @@ public class PlayerDeathListener implements Listener {
     private Map<UUID, ItemStack[]> savedInventories = new HashMap<>();
     private Map<UUID, ItemStack[]> savedArmor = new HashMap<>();
     private Map<UUID, ItemStack> savedOffhand = new HashMap<>();
+    private Map<UUID, Long> invincibilityTimers = new HashMap<>();
     
     public PlayerDeathListener(MangoParty plugin) {
         this.plugin = plugin;
@@ -34,22 +37,75 @@ public class PlayerDeathListener implements Listener {
         }
         
         Player player = (Player) event.getEntity();
-        Match match = plugin.getMatchManager().getPlayerMatch(player);
         
-        // Check if player is in a match and would die from this damage
-        if (match != null && player.getHealth() - event.getFinalDamage() <= 0) {
-            // Cancel the damage event to prevent death
+        // Check if player is invincible
+        if (invincibilityTimers.containsKey(player.getUniqueId()) && 
+            System.currentTimeMillis() < invincibilityTimers.get(player.getUniqueId())) {
+            event.setCancelled(true);
+            return;
+        }
+        
+        // Check if player would die from this damage
+        if (player.getHealth() - event.getFinalDamage() <= 0) {
+            // Cancel the damage event to prevent actual death
             event.setCancelled(true);
             
-            // Handle the death manually
-            handlePlayerDeath(player, match);
+            // Check if player is in a duel
+            if (plugin.getDuelManager().isInDuel(player)) {
+                handleDuelPlayerDeath(player);
+            }
+            // Check if player is in a party match
+            else if (plugin.getMatchManager().getPlayerMatch(player) != null) {
+                Match match = plugin.getMatchManager().getPlayerMatch(player);
+                handlePartyPlayerDeath(player, match);
+            }
         }
     }
     
     /**
-     * Custom method to handle player deaths in matches without triggering the vanilla death event
+     * Handle player deaths in duels without triggering the vanilla death event
      */
-    private void handlePlayerDeath(Player player, Match match) {
+    private void handleDuelPlayerDeath(Player player) {
+        // Store death location with exact yaw/pitch preserved
+        final Location deathLocation = player.getLocation().clone();
+        // Slightly raise Y coordinate to avoid spawning inside blocks
+        deathLocation.setY(deathLocation.getY() + 0.1);
+        
+        // Play death animation without actually killing the player
+        player.playEffect(org.bukkit.EntityEffect.DEATH);
+        
+        // Set health to full
+        player.setHealth(20.0);
+        
+        // Make player invincible for 2 seconds
+        player.setInvulnerable(true);
+        invincibilityTimers.put(player.getUniqueId(), System.currentTimeMillis() + 2000);
+        
+        // Teleport player back to death location
+        new BukkitRunnable() {
+            @Override
+            public void run() {
+                if (player.isOnline()) {
+                    player.teleport(deathLocation);
+                    // Handle the death in DuelManager
+                    plugin.getDuelManager().handlePlayerDeath(player);
+                }
+            }
+        }.runTaskLater(plugin, 1L); // Run 1 tick later
+        
+        // Remove invincibility after 2 seconds
+        new BukkitRunnable() {
+            @Override
+            public void run() {
+                player.setInvulnerable(false);
+            }
+        }.runTaskLater(plugin, 40L); // 2 seconds = 40 ticks
+    }
+    
+    /**
+     * Handle player deaths in party matches without triggering the vanilla death event
+     */
+    private void handlePartyPlayerDeath(Player player, Match match) {
         // Store death location
         final Location deathLocation = player.getLocation().clone();
         
@@ -65,29 +121,13 @@ public class PlayerDeathListener implements Listener {
         // Send elimination message
         player.sendTitle("§c§lELIMINATED", "§7You are now spectating", 10, 40, 10);
         
-        // Save inventories before clearing them
+        // Save inventory before clearing it
         if (!savedInventories.containsKey(player.getUniqueId())) {
             saveInventory(player);
         }
-        if (killer != null && !savedInventories.containsKey(killer.getUniqueId())) {
-            saveInventory(killer);
-        }
         
-        // Make player invincible for 2 seconds
-        player.setInvulnerable(true);
-        
-        // Clear inventories of both players
-        player.getInventory().clear();
-        player.getInventory().setArmorContents(null);
-        player.getInventory().setItemInOffHand(null);
-        player.updateInventory();
-        
-        if (killer != null) {
-            killer.getInventory().clear();
-            killer.getInventory().setArmorContents(null);
-            killer.getInventory().setItemInOffHand(null);
-            killer.updateInventory();
-        }
+        // Make player a spectator
+        makeSpectator(player);
         
         // Ensure player stays at death location
         new BukkitRunnable() {
@@ -108,54 +148,66 @@ public class PlayerDeathListener implements Listener {
             }
         }
         
-        // Start new round after 2 seconds
-        new BukkitRunnable() {
-            @Override
-            public void run() {
-                if (match.isFinished()) {
-                    return;
-                }
-                
-                // Remove invincibility
-                player.setInvulnerable(false);
-                
-                // Restore saved inventories for both players
-                restoreInventory(player);
-                if (killer != null) {
-                    restoreInventory(killer);
-                }
+        // Update scoreboard
+        plugin.getScoreboardManager().updateMatchScoreboards(match);
+    }
+    
+    /**
+     * Make a player a spectator in plugin's custom spectator mode
+     */
+    private void makeSpectator(Player player) {
+        // Set to survival mode but make invisible and allow flight
+        player.setGameMode(GameMode.SURVIVAL);
         
-                // Show countdown message
-                for (Player matchPlayer : match.getAllPlayers()) {
-                    matchPlayer.sendTitle("§6§lNEW ROUND", "§eOrganize your inventory", 10, 100, 10);
-                }
+        // Clear inventory
+        player.getInventory().clear();
+        player.getInventory().setArmorContents(null);
+        player.getInventory().setItemInOffHand(null);
+        player.updateInventory();
+        
+        // Make invisible to other players
+        for (Player online : plugin.getServer().getOnlinePlayers()) {
+            if (!online.equals(player)) {
+                online.hidePlayer(plugin, player);
             }
-        }.runTaskLater(plugin, 40L); // 2 seconds = 40 ticks
+        }
+        
+        // Allow flight
+        player.setAllowFlight(true);
+        player.setFlying(true);
+        
+        // Make invulnerable
+        player.setInvulnerable(true);
     }
     
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onPlayerDeath(PlayerDeathEvent event) {
         Player player = event.getEntity();
-        Match match = plugin.getMatchManager().getPlayerMatch(player);
         
-        if (match == null) {
-            return; // Player not in a match
-        }
-        
-        // Override death behavior for match players
+        // Prevent drops and exp loss for all plugin-managed players
         event.setKeepInventory(true);
         event.setKeepLevel(true);
         event.getDrops().clear();
         event.setDroppedExp(0);
         
-        // Cancel the death event to prevent respawn
-        player.setHealth(20.0);
-        
-        // Handle the death manually
-        handlePlayerDeath(player, match);
-        
-        // Update scoreboard
-        plugin.getScoreboardManager().updateMatchScoreboards(match);
+        // Check if player is in a duel
+        if (plugin.getDuelManager().isInDuel(player)) {
+            // Cancel the death event to prevent respawn
+            player.setHealth(20.0);
+            
+            // Handle the death manually
+            handleDuelPlayerDeath(player);
+        }
+        // Check if player is in a party match
+        else if (plugin.getMatchManager().getPlayerMatch(player) != null) {
+            Match match = plugin.getMatchManager().getPlayerMatch(player);
+            
+            // Cancel the death event to prevent respawn
+            player.setHealth(20.0);
+            
+            // Handle the death manually
+            handlePartyPlayerDeath(player, match);
+        }
     }
 
     public void saveInventory(Player player) {

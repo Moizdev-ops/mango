@@ -212,6 +212,12 @@ public class Match {
         return playerTeams.getOrDefault(playerId, 0);
     }
     
+    public boolean arePlayersOnSameTeam(UUID player1Id, UUID player2Id) {
+        int team1 = getPlayerTeam(player1Id);
+        int team2 = getPlayerTeam(player2Id);
+        return team1 == team2 && team1 != 0;
+    }
+    
     public List<Player> getTeamPlayers(int team) {
         List<Player> teamPlayers = new ArrayList<>();
         for (Map.Entry<UUID, Integer> entry : playerTeams.entrySet()) {

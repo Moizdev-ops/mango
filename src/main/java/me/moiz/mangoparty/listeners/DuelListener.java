@@ -155,6 +155,7 @@ public class DuelListener implements Listener {
     
     /**
      * Prevent damage during countdown or between players not in the same duel
+     * Also handles party split matches where players can hit opponents on the other team
      */
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onEntityDamage(EntityDamageByEntityEvent event) {
@@ -169,16 +170,68 @@ public class DuelListener implements Listener {
         // Check if damaged player is in a duel
         Duel damagedDuel = duelManager.getPlayerDuel(damaged);
         if (damagedDuel == null) {
+            // Check if players are in a party match
+            Match damagedMatch = plugin.getMatchManager().getPlayerMatch(damaged);
+            Match damagerMatch = plugin.getMatchManager().getPlayerMatch(damager);
+            
+            // Handle party match damage
+            if (damagedMatch != null && damagerMatch != null) {
+                // If players are in different matches, cancel damage
+                if (!damagedMatch.getId().equals(damagerMatch.getId())) {
+                    event.setCancelled(true);
+                    damager.sendMessage("§cYou cannot attack players in different matches!");
+                    return;
+                }
+                
+                // If match is in preparing or countdown state, cancel damage
+                if (damagedMatch.getState() == Match.MatchState.PREPARING || 
+                    damagedMatch.getState() == Match.MatchState.COUNTDOWN) {
+                    event.setCancelled(true);
+                    damager.sendMessage("§cYou cannot attack during the countdown!");
+                    return;
+                }
+                
+                // If match is a split match, check if players are on the same team
+                if (damagedMatch.getMatchType().equals("split") && 
+                    damagedMatch.arePlayersOnSameTeam(damaged.getUniqueId(), damager.getUniqueId())) {
+                    event.setCancelled(true);
+                    damager.sendMessage("§cYou cannot attack players on your team!");
+                    return;
+                }
+                
+                // If damaged player is eliminated (spectator), cancel damage
+                if (damagedMatch.isPlayerEliminated(damaged.getUniqueId())) {
+                    event.setCancelled(true);
+                    return;
+                }
+                
+                // Allow damage between players in the same match
+                return;
+            }
             return;
         }
         
         // Check if damager is in the same duel
         Duel damagerDuel = duelManager.getPlayerDuel(damager);
-        if (damagerDuel == null || !damagerDuel.getId().equals(damagedDuel.getId())) {
+        if (damagerDuel == null) {
+            event.setCancelled(true);
+            return;
+        }
+        
+        // Check if both players are in the same duel match
+        if (!damagerDuel.getId().equals(damagedDuel.getId())) {
             event.setCancelled(true);
             // Send message when players are in different duels
             damager.sendMessage(plugin.getConfig().getString("messages.prefix") + 
                              plugin.getConfig().getString("messages.player-duel.cannot-damage-other-duel"));
+            return;
+        }
+        
+        // Check if players are on the same team in a party split match
+        if (damagedDuel.isPartySplitMatch() && damagedDuel.arePlayersOnSameTeam(damaged.getUniqueId(), damager.getUniqueId())) {
+            event.setCancelled(true);
+            damager.sendMessage(plugin.getConfig().getString("messages.prefix") + 
+                             plugin.getConfig().getString("messages.player-duel.cannot-damage-teammate"));
             return;
         }
         

@@ -4,6 +4,8 @@ import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.scheduler.BukkitTask;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.UUID;
 
 public class Duel {
@@ -20,6 +22,8 @@ public class Duel {
     private DuelState state;
     private long startTime;
     private BukkitTask expirationTask;
+    private boolean isPartySplitMatch;
+    private Map<UUID, Integer> playerTeams; // Player UUID -> Team (1 or 2)
     
     // Saved inventories
     private ItemStack[] player1Inventory;
@@ -48,6 +52,16 @@ public class Duel {
         this.currentRound = 0;
         this.state = DuelState.PENDING;
         this.startTime = System.currentTimeMillis();
+        this.isPartySplitMatch = false;
+        this.playerTeams = new HashMap<>();
+        
+        // Default team assignments for regular duels
+        if (challenger != null) {
+            playerTeams.put(challenger.getUniqueId(), 1);
+        }
+        if (target != null) {
+            playerTeams.put(target.getUniqueId(), 2);
+        }
     }
     
     /**
@@ -197,6 +211,32 @@ public class Duel {
     
     public void setPlayer1Offhand(ItemStack player1Offhand) {
         this.player1Offhand = player1Offhand;
+    }
+    
+    public boolean isPartySplitMatch() {
+        return isPartySplitMatch;
+    }
+    
+    public void setPartySplitMatch(boolean partySplitMatch) {
+        isPartySplitMatch = partySplitMatch;
+    }
+    
+    public Map<UUID, Integer> getPlayerTeams() {
+        return playerTeams;
+    }
+    
+    public void setPlayerTeam(UUID playerId, int team) {
+        playerTeams.put(playerId, team);
+    }
+    
+    public int getPlayerTeam(UUID playerId) {
+        return playerTeams.getOrDefault(playerId, 0);
+    }
+    
+    public boolean arePlayersOnSameTeam(Player player1, Player player2) {
+        int team1 = getPlayerTeam(player1.getUniqueId());
+        int team2 = getPlayerTeam(player2.getUniqueId());
+        return team1 > 0 && team2 > 0 && team1 == team2;
     }
     
     public ItemStack getPlayer2Offhand() {

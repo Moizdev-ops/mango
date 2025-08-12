@@ -183,14 +183,70 @@ public class MatchManager {
             } else if (team == 2) {
                 player.teleport(arena.getSpawn2());
             }
+            // Freeze player during countdown
+            player.setWalkSpeed(0.0f);
         }
+        
+        // Start 5 second countdown
+        new BukkitRunnable() {
+            int countdown = 5;
+            
+            @Override
+            public void run() {
+                if (countdown > 0) {
+                    for (Player player : players) {
+                        if (player.isOnline()) {
+                            player.sendTitle("§6§lMatch starts in", "§e" + countdown + " seconds", 0, 20, 0);
+                        }
+                    }
+                    countdown--;
+                } else {
+                    // Unfreeze players
+                    for (Player player : players) {
+                        if (player.isOnline()) {
+                            player.setWalkSpeed(0.2f); // Default walk speed
+                            player.sendTitle("§c§lFIGHT!", "", 0, 20, 0);
+                        }
+                    }
+                    this.cancel();
+                }
+            }
+        }.runTaskTimer(plugin, 0L, 20L); // Run every second
     }
     
     private void startFFAMatch(List<Player> players, Arena arena) {
         // Teleport all players to center
         for (Player player : players) {
             player.teleport(arena.getCenter());
+            // Freeze player during countdown
+            player.setWalkSpeed(0.0f);
         }
+        
+        // Start 5 second countdown
+        new BukkitRunnable() {
+            int countdown = 5;
+            
+            @Override
+            public void run() {
+                if (countdown > 0) {
+                    for (Player player : players) {
+                        if (player.isOnline()) {
+                            player.sendTitle("§6§lMatch starts in", "§e" + countdown + " seconds", 0, 20, 0);
+                        }
+                    }
+                    countdown--;
+                } else {
+                    // Unfreeze players
+                    for (Player player : players) {
+                        if (player.isOnline()) {
+                            player.setWalkSpeed(0.2f); // Default walk speed
+                            player.sendTitle("§c§lFIGHT!", "", 0, 20, 0);
+                        }
+                    }
+                    this.cancel();
+                }
+            }
+        }.runTaskTimer(plugin, 0L, 20L); // Run every second
     }
 
     public void startPartyVsPartyMatch(Match match, Party party1, Party party2) {
@@ -198,6 +254,9 @@ public class MatchManager {
         if (allPlayers.isEmpty()) {
             return;
         }
+        
+        // Regenerate arena
+        plugin.getArenaManager().pasteSchematic(match.getArena());
         
         Arena arena = match.getArena();
         Kit kit = match.getKit();
@@ -436,6 +495,8 @@ public class MatchManager {
     }
     
     public void endMatch(Match match) {
+        if (match == null) return;
+        
         match.setState(Match.MatchState.ENDING);
         
         List<Player> players = match.getAllPlayers();
@@ -459,6 +520,9 @@ public class MatchManager {
                 }
             }
         }
+        
+        // Regenerate arena first to ensure it's ready for future matches
+        plugin.getArenaManager().pasteSchematic(match.getArena());
         
         // Release the arena
         plugin.getArenaManager().releaseArena(match.getArena().getName());
@@ -495,9 +559,6 @@ public class MatchManager {
         // Set party as not in match
         match.getParty().setInMatch(false);
         match.setState(Match.MatchState.FINISHED);
-        
-        // Regenerate arena
-        plugin.getArenaManager().pasteSchematic(match.getArena());
         
         // Cancel scoreboard update task
         plugin.getScoreboardManager().cancelTask(match.getId());
