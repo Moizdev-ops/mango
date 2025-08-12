@@ -58,7 +58,7 @@ public class DuelManager {
         }
         
         // Check if target is in a party
-        if (plugin.getPartyManager().getPlayerParty(target.getUniqueId()) != null) {
+        if (plugin.getPartyManager().hasParty(target)) {
             challenger.sendMessage(plugin.getConfig().getString("messages.prefix") + 
                                  "§cYou cannot duel a player who is in a party!");
             return;
