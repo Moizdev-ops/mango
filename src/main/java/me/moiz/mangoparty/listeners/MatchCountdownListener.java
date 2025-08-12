@@ -6,6 +6,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
+import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.player.PlayerDropItemEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
@@ -68,6 +69,33 @@ public class MatchCountdownListener implements Listener {
             
             // Allow all other interactions during countdown (including crossbow loading)
             // We want to allow inventory organization and crossbow loading during the countdown
+        }
+    }
+    
+    @EventHandler(priority = EventPriority.HIGHEST)
+    public void onEntityDamage(EntityDamageEvent event) {
+        if (!(event.getEntity() instanceof Player)) {
+            return;
+        }
+        
+        Player player = (Player) event.getEntity();
+        Match match = plugin.getMatchManager().getPlayerMatch(player);
+        
+        // Check if player is in a match that's in preparation state
+        if (match != null && match.getState() == Match.MatchState.PREPARING || 
+            match != null && match.getState() == Match.MatchState.COUNTDOWN) {
+            
+            // Prevent fire damage during countdown
+            if (event.getCause() == EntityDamageEvent.DamageCause.FIRE || 
+                event.getCause() == EntityDamageEvent.DamageCause.FIRE_TICK || 
+                event.getCause() == EntityDamageEvent.DamageCause.LAVA) {
+                
+                // Cancel the damage event
+                event.setCancelled(true);
+                
+                // Extinguish the player
+                player.setFireTicks(0);
+            }
         }
     }
 }

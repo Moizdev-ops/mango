@@ -77,11 +77,17 @@ public class PlayerDeathListener implements Listener {
         // Set health to full
         player.setHealth(20.0);
         
+        // Clear inventory immediately
+        if (!savedInventories.containsKey(player.getUniqueId())) {
+            saveInventory(player);
+        }
+        player.getInventory().clear();
+        
         // Make player invincible for 2 seconds
         player.setInvulnerable(true);
         invincibilityTimers.put(player.getUniqueId(), System.currentTimeMillis() + 2000);
         
-        // Teleport player back to death location
+        // Teleport player back to death location and handle death with 2 second delay
         new BukkitRunnable() {
             @Override
             public void run() {
@@ -91,7 +97,7 @@ public class PlayerDeathListener implements Listener {
                     plugin.getDuelManager().handlePlayerDeath(player);
                 }
             }
-        }.runTaskLater(plugin, 1L); // Run 1 tick later
+        }.runTaskLater(plugin, 40L); // Run after 2 seconds (40 ticks)
         
         // Remove invincibility after 2 seconds
         new BukkitRunnable() {
@@ -121,24 +127,24 @@ public class PlayerDeathListener implements Listener {
         // Send elimination message
         player.sendTitle("§c§lELIMINATED", "§7You are now spectating", 10, 40, 10);
         
-        // Save inventory before clearing it
+        // Save inventory and clear it immediately
         if (!savedInventories.containsKey(player.getUniqueId())) {
             saveInventory(player);
         }
+        player.getInventory().clear();
         
-        // Make player a spectator
-        makeSpectator(player);
-        
-        // Ensure player stays at death location
+        // Make player a spectator after 2 seconds
         new BukkitRunnable() {
             @Override
             public void run() {
                 if (player.isOnline()) {
                     // Keep player at death location
                     player.teleport(deathLocation);
+                    // Make player a spectator
+                    makeSpectator(player);
                 }
             }
-        }.runTaskLater(plugin, 1L); // Run 1 tick later
+        }.runTaskLater(plugin, 40L); // Run after 2 seconds (40 ticks)
         
         // Announce elimination to all match players
         for (Player matchPlayer : match.getAllPlayers()) {

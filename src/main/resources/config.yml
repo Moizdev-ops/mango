@@ -1,5 +1,8 @@
 # MangoParty Configuration
 
+# Debug mode - set to true to enable debug messages in console
+debug: false
+
 # Party Settings
 party:
   # Maximum party size
