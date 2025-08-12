@@ -239,6 +239,12 @@ public class Duel {
         return team1 > 0 && team2 > 0 && team1 == team2;
     }
     
+    public boolean arePlayersOnSameTeam(UUID player1Id, UUID player2Id) {
+        int team1 = getPlayerTeam(player1Id);
+        int team2 = getPlayerTeam(player2Id);
+        return team1 > 0 && team2 > 0 && team1 == team2;
+    }
+    
     public ItemStack getPlayer2Offhand() {
         return player2Offhand;
     }

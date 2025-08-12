@@ -49,24 +49,78 @@ Continue building your app on:
 - Divide your party into two balanced teams
 - Fight against your friends in structured team battles
 - Automatic team assignment with spawn point allocation
+- **Flow**:
+  1. Party leader selects "Split Match" from the match GUI
+  2. Players are automatically divided into two teams (Team 1 and Team 2)
+  3. A 5-second countdown begins with players frozen in place
+  4. When countdown ends, players are unfrozen and the match begins
+  5. Players can only damage opponents on the opposite team
+  6. Last team with surviving members wins
+  7. Arena is automatically regenerated after the match
 
 #### **2. Party FFA (Free For All)**
 - Last player standing wins
 - All party members fight each other
 - Perfect for determining the ultimate champion
+- **Flow**:
+  1. Party leader selects "FFA Match" from the match GUI
+  2. All players are teleported to random spawn points in the arena
+  3. A 5-second countdown begins with players frozen in place
+  4. When countdown ends, players are unfrozen and the match begins
+  5. Every player fights against everyone else
+  6. Last player standing wins the match
+  7. Arena is automatically regenerated after the match
 
 #### **3. Party vs Party Duels**
 - Challenge other parties to epic team battles
 - Leader-to-leader challenge system with clickable accept/decline
 - 60-second challenge expiration timer
 - Automatic team assignment (Party 1 vs Party 2)
+- **Flow**:
+  1. Party leader challenges another party using `/party challenge <leader>`
+  2. Challenged party leader receives clickable accept/decline options
+  3. If accepted, all members from both parties are teleported to the arena
+  4. Players from the challenging party are assigned to Team 1
+  5. Players from the challenged party are assigned to Team 2
+  6. A 5-second countdown begins with players frozen in place
+  7. When countdown ends, players are unfrozen and the match begins
+  8. Players can only damage opponents from the other party
+  9. Last party with surviving members wins
+  10. Arena is automatically regenerated after the match
 
-#### **4. Queue System (1v1, 2v2, 3v3)**
+#### **4. Duels (1v1)**
+- Challenge specific players to one-on-one combat
+- Kit selection for balanced gameplay
+- Best-of-N rounds system
+- **Flow**:
+  1. Player challenges another using `/duel <player> <kit> <rounds>`
+  2. Challenged player receives clickable accept/decline options
+  3. If accepted, both players are teleported to the arena
+  4. Players' inventories are saved and replaced with the selected kit
+  5. A countdown begins with players frozen in place
+  6. When countdown ends, players are unfrozen and the round begins
+  7. Winner is determined when one player defeats the other
+  8. After each round, players are reset and teleported back to spawns
+  9. First player to win the specified number of rounds wins the duel
+  10. Players' original inventories are restored after the duel ends
+  11. Arena is automatically regenerated after the match
+
+#### **5. Queue System (1v1, 2v2, 3v3)**
 - **Ranked Matchmaking**: Join queues for competitive matches
 - **Kit-Based Queuing**: Queue with specific kits for balanced gameplay
 - **Auto-Matching**: Automatic match creation when enough players queue
 - **Live Queue Counts**: See how many players are queued for each kit
 - **Smart Team Balancing**: Random team assignment for fair matches
+- **Flow**:
+  1. Players join queue using `/1v1queue`, `/2v2queue`, or `/3v3queue`
+  2. Players select a kit from the GUI
+  3. System matches players/teams with similar queue times
+  4. When enough players are in queue, a match is automatically created
+  5. Players are teleported to the arena and assigned to teams
+  6. A countdown begins with players frozen in place
+  7. When countdown ends, players are unfrozen and the match begins
+  8. Last team with surviving members wins
+  9. Arena is automatically regenerated after the match
 
 ### 🏟️ **Arena Management**
 - **Visual Arena Editor**: GUI-based arena setup with click-to-set locations
@@ -172,6 +226,76 @@ MangoParty features a powerful arena duplication system that allows for concurre
    - Efficient use of server resources
    - Automatic cleanup when matches end
 
+## 🧩 Technical Implementation
+
+### **Game Mode Architecture**
+
+#### **1. Duels System**
+- **Core Classes**: `Duel.java`, `DuelManager.java`, `DuelListener.java`
+- **Implementation Details**:
+  - Duels are managed through the `Duel` model class which tracks challenger, target, kit, rounds, and state
+  - `DuelManager` handles duel creation, acceptance, and round management
+  - `DuelListener` controls damage events, ensuring players can only damage opponents in the same duel
+  - Round-based system with win tracking and automatic next round initialization
+  - Player inventories are saved and restored using deep copy methods
+  - Countdown system freezes players in place during preparation
+
+#### **2. Party Split Matches**
+- **Core Classes**: `Match.java`, `MatchManager.java`, `DuelListener.java`
+- **Implementation Details**:
+  - Uses the `Match` model with a `playerTeams` map to track team assignments
+  - Players are divided into Team 1 and Team 2 using the `assignTeams()` method
+  - The `isPartySplitMatch` flag enables team-based damage control
+  - `DuelListener` checks team affiliation before allowing damage between players
+  - 5-second countdown with player movement restriction
+  - Arena regeneration occurs after match completion
+
+#### **3. Party FFA**
+- **Core Classes**: `Match.java`, `MatchManager.java`, `DuelListener.java`
+- **Implementation Details**:
+  - Uses the `Match` model without team restrictions
+  - All players are teleported to random spawn points
+  - No team assignments, allowing all players to damage each other
+  - Last player standing detection through elimination tracking
+  - 5-second countdown with player movement restriction
+  - Arena regeneration occurs after match completion
+
+#### **4. Party vs Party**
+- **Core Classes**: `Match.java`, `MatchManager.java`, `DuelListener.java`
+- **Implementation Details**:
+  - Uses the `Match` model with the `assignPartyVsPartyTeams()` method
+  - Challenge system with 60-second expiration timer
+  - Team assignments based on party membership (Party 1 = Team 1, Party 2 = Team 2)
+  - `DuelListener` checks team affiliation before allowing damage
+  - 5-second countdown with player movement restriction
+  - Arena regeneration occurs after match completion
+
+#### **5. Queue System**
+- **Core Classes**: `Queue.java`, `QueueManager.java`, `MatchManager.java`
+- **Implementation Details**:
+  - Queue entries stored with player/party information, kit selection, and queue time
+  - Automatic matching based on queue duration and team size
+  - Kit-specific queues to ensure balanced gameplay
+  - Match creation when enough players/teams are available
+  - Integration with the match system for actual gameplay
+
+### **Common Components**
+
+#### **Arena Management**
+- **Core Classes**: `Arena.java`, `ArenaManager.java`
+- **Implementation Details**:
+  - WorldEdit integration for schematic saving and loading
+  - Arena reservation system to prevent conflicts
+  - Automatic regeneration after matches
+  - Arena duplication for concurrent matches
+
+#### **Kit System**
+- **Core Classes**: `Kit.java`, `KitManager.java`
+- **Implementation Details**:
+  - Inventory-based kit creation and application
+  - Custom rule engine for kit-specific gameplay modifications
+  - GUI-based kit selection and management
+
 ## 🔧 Installation
 
 ### **Requirements**
@@ -184,17 +308,17 @@ MangoParty features a powerful arena duplication system that allows for concurre
 ### **Installation Steps**
 
 1. **Download the Plugin**
-   \`\`\`bash
+   ```bash
    # Download MangoParty-1.0.0.jar from releases
    wget https://github.com/your-repo/mangoparty/releases/download/v1.0.0/MangoParty-1.0.0.jar
-   \`\`\`
+   ```
 
 2. **Install Dependencies**
    - Download and install [WorldEdit](https://dev.bukkit.org/projects/worldedit)
    - Optionally install [FastAsyncWorldEdit](https://www.spigotmc.org/resources/fastasyncworldedit.13932/)
 
 3. **Server Setup**
-   \`\`\`bash
+   ```bash
    # Place the plugin in your plugins folder
    cp MangoParty-1.0.0.jar /path/to/server/plugins/
    
