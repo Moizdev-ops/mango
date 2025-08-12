@@ -30,7 +30,7 @@ public class PlayerDeathListener implements Listener {
         this.plugin = plugin;
     }
     
-    @EventHandler(priority = EventPriority.HIGHEST)
+    @EventHandler(priority = EventPriority.HIGH)
     public void onPlayerDamage(EntityDamageEvent event) {
         if (!(event.getEntity() instanceof Player)) {
             return;
@@ -38,12 +38,14 @@ public class PlayerDeathListener implements Listener {
         
         Player player = (Player) event.getEntity();
         
-        // Only handle players in duels or matches
+        // Check if player is in a duel
         boolean isInDuel = plugin.getDuelManager().isInDuel(player);
-        boolean isInMatch = plugin.getMatchManager().getPlayerMatch(player) != null;
+        // Check if player is in a match
+        boolean isInMatch = plugin.getMatchManager().isInMatch(player);
         
+        // Only handle damage for players in duels or matches
         if (!isInDuel && !isInMatch) {
-            return; // Let vanilla death handling work for players not in duels/matches
+            return;
         }
         
         // Check if player is invincible
@@ -53,8 +55,8 @@ public class PlayerDeathListener implements Listener {
             return;
         }
         
-        // Check if player would die from this damage
-        if (player.getHealth() - event.getFinalDamage() <= 0) {
+        // Check if the entity will die from this damage
+        if ((player.getHealth() - event.getFinalDamage()) <= 0) {
             // Cancel the damage event to prevent actual death
             event.setCancelled(true);
             
@@ -94,6 +96,7 @@ public class PlayerDeathListener implements Listener {
         // Make player invincible for 2 seconds
         player.setInvulnerable(true);
         invincibilityTimers.put(player.getUniqueId(), System.currentTimeMillis() + 2000);
+        player.sendMessage("§aYou are invincible for 2 seconds after death.");
         
         // Teleport player back to death location and handle death with 2 second delay
         new BukkitRunnable() {
@@ -140,6 +143,11 @@ public class PlayerDeathListener implements Listener {
             saveInventory(player);
         }
         player.getInventory().clear();
+        
+        // Make player invincible for 2 seconds
+        player.setInvulnerable(true);
+        invincibilityTimers.put(player.getUniqueId(), System.currentTimeMillis() + 2000);
+        player.sendMessage("§aYou are invincible for 2 seconds after death.");
         
         // Make player a spectator after 2 seconds
         new BukkitRunnable() {
@@ -192,6 +200,34 @@ public class PlayerDeathListener implements Listener {
         
         // Make invulnerable
         player.setInvulnerable(true);
+    }
+    
+    @EventHandler(priority = EventPriority.HIGHEST)
+    public void onEntityDamage(EntityDamageEvent event) {
+        if (!(event.getEntity() instanceof Player)) {
+            return;
+        }
+        
+        Player player = (Player) event.getEntity();
+        
+        // Check if the entity will die from this damage
+        if ((player.getHealth() - event.getFinalDamage()) <= 0) {
+            // Cancel the damage event to prevent actual death
+            event.setCancelled(true);
+            
+            // Check if player is in a duel
+            boolean isInDuel = plugin.getDuelManager().isInDuel(player);
+            // Check if player is in a match
+            boolean isInMatch = plugin.getMatchManager().isInMatch(player);
+            
+            // Only handle damage for players in duels or matches
+            if (isInDuel) {
+                handleDuelPlayerDeath(player);
+            } else if (isInMatch) {
+                Match match = plugin.getMatchManager().getPlayerMatch(player);
+                handlePartyPlayerDeath(player, match);
+            }
+        }
     }
     
     @EventHandler(priority = EventPriority.HIGHEST)

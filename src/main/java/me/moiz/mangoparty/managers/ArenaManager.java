@@ -388,34 +388,45 @@ public class ArenaManager {
     private boolean pasteSchematicForInstance(Arena originalArena, Arena instance) {
         plugin.getLogger().info("Attempting to paste schematic for instance: " + instance.getName() + " from original arena: " + originalArena.getName());
         try {
-            File schematicsDir = new File(plugin.getDataFolder(), "schematics");
-            File schematicFile = new File(schematicsDir, originalArena.getName() + ".schem");
-            plugin.getLogger().info("Schematic file path: " + schematicFile.getAbsolutePath());
+            String schematicName = originalArena.getName();
             
-            if (!schematicFile.exists()) {
-                plugin.getLogger().warning("Schematic file not found for original arena: " + originalArena.getName() + ". Path: " + schematicFile.getAbsolutePath());
-                return false;
+            // Try to get clipboard from cache first
+            Clipboard clipboard = schematicCache.get(schematicName);
+            
+            // If not in cache, load it from disk
+            if (clipboard == null) {
+                File schematicsDir = new File(plugin.getDataFolder(), "schematics");
+                File schematicFile = new File(schematicsDir, schematicName + ".schem");
+                plugin.getLogger().info("Schematic file path: " + schematicFile.getAbsolutePath());
+                
+                if (!schematicFile.exists()) {
+                    plugin.getLogger().warning("Schematic file not found for original arena: " + originalArena.getName() + ". Path: " + schematicFile.getAbsolutePath());
+                    return false;
+                }
+                
+                ClipboardFormat format = ClipboardFormats.findByAlias("schem");
+                if (format == null) {
+                    format = ClipboardFormats.findByAlias("schematic");
+                }
+                if (format == null) {
+                    plugin.getLogger().severe("No schematic format found for reading!");
+                    return false;
+                }
+                plugin.getLogger().info("Using clipboard format: " + format.getName());
+                
+                try (ClipboardReader reader = format.getReader(new FileInputStream(schematicFile))) {
+                    clipboard = reader.read();
+                    plugin.getLogger().info("Clipboard read successfully. Clipboard dimensions: " + clipboard.getDimensions().toString());
+                    // Cache the clipboard for future use
+                    schematicCache.put(schematicName, clipboard);
+                }
             }
-            
-            // We'll always use the original arena's schematic for instances, not create a new one
             
             com.sk89q.worldedit.world.World world = BukkitAdapter.adapt(instance.getCorner1().getWorld());
             plugin.getLogger().info("Adapted Bukkit world to WorldEdit world: " + world.getName());
             
-            ClipboardFormat format = ClipboardFormats.findByAlias("schem");
-            if (format == null) {
-                format = ClipboardFormats.findByAlias("schematic");
-            }
-            if (format == null) {
-                plugin.getLogger().severe("No schematic format found for reading!");
-                return false;
-            }
-            plugin.getLogger().info("Using clipboard format: " + format.getName());
-            
-            try (ClipboardReader reader = format.getReader(new FileInputStream(schematicFile))) {
-                Clipboard clipboard = reader.read();
-                plugin.getLogger().info("Clipboard read successfully. Clipboard dimensions: " + clipboard.getDimensions().toString());
-            
+            // Use async operation for better performance
+            Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
                 try (EditSession editSession = WorldEdit.getInstance().newEditSession(world)) {
                     // Calculate the minimum point where the schematic should be pasted
                     BlockVector3 pasteLocation = BlockVector3.at(
@@ -423,16 +434,22 @@ public class ArenaManager {
                         Math.min(instance.getCorner1().getBlockY(), instance.getCorner2().getBlockY()),
                         Math.min(instance.getCorner1().getBlockZ(), instance.getCorner2().getBlockZ())
                     );
-                
+                    
+                    // Set fast mode to true for better performance
+                    editSession.setFastMode(true);
+                    
                     Operation operation = new ClipboardHolder(clipboard)
                         .createPaste(editSession)
                         .to(pasteLocation)
-                        .ignoreAirBlocks(false)
+                        .ignoreAirBlocks(true) // Ignore air blocks for better performance
                         .build();
-                
+                    
                     Operations.complete(operation);
+                    plugin.getLogger().info("Schematic pasted successfully for instance " + instance.getName());
+                } catch (Exception e) {
+                    plugin.getLogger().severe("Failed to paste schematic for arena instance " + instance.getName() + ": " + e.getMessage());
                 }
-            }
+            });
             
             return true;
         } catch (Exception e) {
@@ -583,56 +600,75 @@ public class ArenaManager {
         }
     }
     
+    // Cache for schematics to avoid loading from disk each time
+    private Map<String, Clipboard> schematicCache = new ConcurrentHashMap<>();
+    
     public boolean pasteSchematic(Arena arena) {
         try {
-            File schematicsDir = new File(plugin.getDataFolder(), "schematics");
-            File schematicFile;
+            String schematicName;
             
             // For instances, use the original arena's schematic
             if (arena.isInstance() && arena.getOriginalArena() != null) {
-                schematicFile = new File(schematicsDir, arena.getOriginalArena() + ".schem");
-                plugin.getLogger().info("Using original arena schematic for instance: " + arena.getOriginalArena() + ".schem");
+                schematicName = arena.getOriginalArena();
             } else {
-                schematicFile = new File(schematicsDir, arena.getName() + ".schem");
+                schematicName = arena.getName();
             }
             
-            if (!schematicFile.exists()) {
-                plugin.getLogger().warning("Schematic file not found: " + schematicFile.getPath());
-                return false;
+            // Try to get clipboard from cache first
+            Clipboard clipboard = schematicCache.get(schematicName);
+            
+            // If not in cache, load it from disk
+            if (clipboard == null) {
+                File schematicsDir = new File(plugin.getDataFolder(), "schematics");
+                File schematicFile = new File(schematicsDir, schematicName + ".schem");
+                
+                if (!schematicFile.exists()) {
+                    plugin.getLogger().warning("Schematic file not found: " + schematicFile.getPath());
+                    return false;
+                }
+                
+                ClipboardFormat format = ClipboardFormats.findByAlias("schem");
+                if (format == null) {
+                    format = ClipboardFormats.findByAlias("schematic");
+                }
+                if (format == null) {
+                    plugin.getLogger().severe("No schematic format found for reading!");
+                    return false;
+                }
+                
+                try (ClipboardReader reader = format.getReader(new FileInputStream(schematicFile))) {
+                    clipboard = reader.read();
+                    // Cache the clipboard for future use
+                    schematicCache.put(schematicName, clipboard);
+                }
             }
             
             com.sk89q.worldedit.world.World world = BukkitAdapter.adapt(arena.getCorner1().getWorld());
             
-            ClipboardFormat format = ClipboardFormats.findByAlias("schem");
-            if (format == null) {
-                format = ClipboardFormats.findByAlias("schematic");
-            }
-            if (format == null) {
-                plugin.getLogger().severe("No schematic format found for reading!");
-                return false;
-            }
-            
-            try (ClipboardReader reader = format.getReader(new FileInputStream(schematicFile))) {
-                Clipboard clipboard = reader.read();
-            
+            // Use async operation for better performance
+            Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
                 try (EditSession editSession = WorldEdit.getInstance().newEditSession(world)) {
                     // Calculate the minimum point where the schematic should be pasted
-                    // This should match exactly where it was saved from
                     BlockVector3 pasteLocation = BlockVector3.at(
                         Math.min(arena.getCorner1().getBlockX(), arena.getCorner2().getBlockX()),
                         Math.min(arena.getCorner1().getBlockY(), arena.getCorner2().getBlockY()),
                         Math.min(arena.getCorner1().getBlockZ(), arena.getCorner2().getBlockZ())
                     );
-                
+                    
+                    // Set fast mode to true for better performance
+                    editSession.setFastMode(true);
+                    
                     Operation operation = new ClipboardHolder(clipboard)
                         .createPaste(editSession)
                         .to(pasteLocation)
-                        .ignoreAirBlocks(false)
+                        .ignoreAirBlocks(true) // Ignore air blocks for better performance
                         .build();
-                
+                    
                     Operations.complete(operation);
+                } catch (Exception e) {
+                    plugin.getLogger().severe("Failed to paste schematic for arena " + arena.getName() + ": " + e.getMessage());
                 }
-            }
+            });
             
             return true;
         } catch (Exception e) {
