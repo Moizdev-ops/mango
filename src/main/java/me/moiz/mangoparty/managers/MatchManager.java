@@ -621,6 +621,8 @@ public class MatchManager {
         
         // Start countdown
         startCountdown(match);
+        
+        return true;
     }
 
     /**
