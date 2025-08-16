@@ -179,7 +179,25 @@ public class PartyDuelManager {
         challengedParty.setInMatch(true);
         
         // Start the match
-        plugin.getMatchManager().startPartyVsPartyMatch(match, challengerParty, challengedParty);
+        if (!plugin.getMatchManager().startPartyVsPartyMatch(match, challengerParty, challengedParty)) {
+            // If match failed to start, set parties as not in match
+            challengerParty.setInMatch(false);
+            challengedParty.setInMatch(false);
+            
+            // Notify party leaders
+            Player challengerLeader = Bukkit.getPlayer(challengerParty.getLeader());
+            Player challengedLeader = Bukkit.getPlayer(challengedParty.getLeader());
+            
+            if (challengerLeader != null) {
+                challengerLeader.sendMessage("§cFailed to start the party duel. Please try again later.");
+            }
+            
+            if (challengedLeader != null) {
+                challengedLeader.sendMessage("§cFailed to start the party duel. Please try again later.");
+            }
+            
+            return;
+        }
         
         // Start scoreboards
         plugin.getScoreboardManager().startPartyDuelScoreboards(match);

@@ -1,0 +1,194 @@
+# MangoParty Scoreboard Configuration
+
+# Global Settings
+global:
+  update_interval: 20 # Update interval in ticks (20 ticks = 1 second)
+  title: "&#FFD700&lMangoParty"
+
+# Party FFA Match Scoreboard
+party_ffa:
+  title: "&#FFD700&lParty FFA"
+  lines:
+    - "&7"
+    - "&#FF6B6BArena: &#FFFFFF{arena}"
+    - "&#4ECDC4Kit: &#FFFFFF{kit}"
+    - "&7"
+    - "&#FFE66DPlayers: &#FFFFFF{players_alive}/{players_total}"
+    - "&7"
+    - "&#FFEAA7Your Stats:"
+    - "  &#FF7675Kills: &#FFFFFF{kills}"
+    - "  &#74B9FFDeaths: &#FFFFFF{deaths}"
+    - "&7"
+    - "&#A29BFETime: &#FFFFFF{time}"
+    - "&7"
+    - "&#FFD93Dmangoparty.com"
+
+# Party Split Match Scoreboard
+party_split:
+  title: "&#FFD700&lParty Split"
+  lines:
+    - "&7"
+    - "&#FF6B6BArena: &#FFFFFF{arena}"
+    - "&#4ECDC4Kit: &#FFFFFF{kit}"
+    - "&7"
+    - "&#FFE66DTeams:"
+    - "  &#FF7675Your Team: &#FFFFFF{your_team_alive}/{your_team_total}"
+    - "  &#74B9FFOpponent: &#FFFFFF{opponent_team_alive}/{opponent_team_total}"
+    - "&7"
+    - "&#FFEAA7Your Stats:"
+    - "  &#FF7675Kills: &#FFFFFF{kills}"
+    - "  &#74B9FFDeaths: &#FFFFFF{deaths}"
+    - "&7"
+    - "&#A29BFETime: &#FFFFFF{time}"
+    - "&7"
+    - "&#FFD93Dmangoparty.com"
+
+# Duel Match Scoreboard
+duel:
+  title: "&#FFD700&lDuel"
+  lines:
+    - "&7"
+    - "&#FF6B6BArena: &#FFFFFF{arena}"
+    - "&#4ECDC4Kit: &#FFFFFF{kit}"
+    - "&7"
+    - "&#FFE66DRounds: &#FFFFFF{current_round}/{total_rounds}"
+    - "&7"
+    - "&#FFEAA7Score:"
+    - "  &#FF7675{player}: &#FFFFFF{player_score}"
+    - "  &#74B9FF{opponent}: &#FFFFFF{opponent_score}"
+    - "&7"
+    - "&#A29BFETime: &#FFFFFF{time}"
+    - "&7"
+    - "&#FFD93Dmangoparty.com"
+
+# 1v1 Queue Match Scoreboard
+queue_1v1:
+  title: "&#FFD700&l1v1 Queue"
+  lines:
+    - "&7"
+    - "&#FF6B6BArena: &#FFFFFF{arena}"
+    - "&#4ECDC4Kit: &#FFFFFF{kit}"
+    - "&7"
+    - "&#FFE66DOpponent: &#FFFFFF{opponent}"
+    - "&7"
+    - "&#FFEAA7Your Stats:"
+    - "  &#FF7675Kills: &#FFFFFF{kills}"
+    - "  &#74B9FFDeaths: &#FFFFFF{deaths}"
+    - "&7"
+    - "&#A29BFETime: &#FFFFFF{time}"
+    - "&7"
+    - "&#FFD93Dmangoparty.com"
+
+# 2v2 Queue Match Scoreboard
+queue_2v2:
+  title: "&#FFD700&l2v2 Queue"
+  lines:
+    - "&7"
+    - "&#FF6B6BArena: &#FFFFFF{arena}"
+    - "&#4ECDC4Kit: &#FFFFFF{kit}"
+    - "&7"
+    - "&#FFE66DTeams:"
+    - "  &#FF7675Your Team: &#FFFFFF{your_team_alive}/{your_team_total}"
+    - "  &#74B9FFOpponent: &#FFFFFF{opponent_team_alive}/{opponent_team_total}"
+    - "&7"
+    - "&#FFEAA7Your Stats:"
+    - "  &#FF7675Kills: &#FFFFFF{kills}"
+    - "  &#74B9FFDeaths: &#FFFFFF{deaths}"
+    - "&7"
+    - "&#A29BFETime: &#FFFFFF{time}"
+    - "&7"
+    - "&#FFD93Dmangoparty.com"
+
+# 3v3 Queue Match Scoreboard
+queue_3v3:
+  title: "&#FFD700&l3v3 Queue"
+  lines:
+    - "&7"
+    - "&#FF6B6BArena: &#FFFFFF{arena}"
+    - "&#4ECDC4Kit: &#FFFFFF{kit}"
+    - "&7"
+    - "&#FFE66DTeams:"
+    - "  &#FF7675Your Team: &#FFFFFF{your_team_alive}/{your_team_total}"
+    - "  &#74B9FFOpponent: &#FFFFFF{opponent_team_alive}/{opponent_team_total}"
+    - "&7"
+    - "&#FFEAA7Your Stats:"
+    - "  &#FF7675Kills: &#FFFFFF{kills}"
+    - "  &#74B9FFDeaths: &#FFFFFF{deaths}"
+    - "&7"
+    - "&#A29BFETime: &#FFFFFF{time}"
+    - "&7"
+    - "&#FFD93Dmangoparty.com"
+
+# Party Duel Scoreboard
+party_duel:
+  title: "&#FFD700&lParty Duel"
+  lines:
+    - "&7"
+    - "&#FF6B6BArena: &#FFFFFF{arena}"
+    - "&#4ECDC4Kit: &#FFFFFF{kit}"
+    - "&7"
+    - "&#FFE66DTeams:"
+    - "  &#FF7675{party1_name}: &#FFFFFF{party1_alive}/{party1_total}"
+    - "  &#74B9FF{party2_name}: &#FFFFFF{party2_alive}/{party2_total}"
+    - "&7"
+    - "&#FFEAA7Your Stats:"
+    - "  &#FF7675Kills: &#FFFFFF{kills}"
+    - "  &#74B9FFDeaths: &#FFFFFF{deaths}"
+    - "&7"
+    - "&#A29BFETime: &#FFFFFF{time}"
+    - "&7"
+    - "&#FFD93Dmangoparty.com"
+
+# Placeholders Reference
+# =====================
+#
+# Global placeholders available in all scoreboards:
+# {arena} - Current arena name (displays the name of the arena where the match is taking place)
+# {kit} - Current kit name (displays the name of the kit being used in the match)
+# {match_type} - Type of match (displays FFA, SPLIT, 1V1, etc.)
+# {state} - Current match state (displays PREPARING, COUNTDOWN, ACTIVE, etc.)
+# {time} - Match duration in MM:SS format (shows how long the match has been running)
+# {kills} - Player's kills in current match (shows how many opponents the player has eliminated)
+# {deaths} - Player's deaths in current match (shows how many times the player has been eliminated)
+# {players_alive} - Number of players still alive (shows how many players are still in the match)
+# {players_total} - Total number of players in match (shows how many players started the match)
+# {spectators} - Number of spectators watching the match
+# {status} - Player status (displays "Alive" or "Spectating" based on player's current state)
+# {player} - Current player's name (displays the name of the player viewing the scoreboard)
+#
+# Team-based placeholders:
+# {your_team_alive} - Number of alive players in your team (shows how many teammates are still fighting)
+# {your_team_total} - Total number of players in your team (shows how many players are on your team)
+# {opponent_team_alive} - Number of alive players in opponent team (shows how many enemies are still fighting)
+# {opponent_team_total} - Total number of players in opponent team (shows how many players are on the enemy team)
+# {team1_alive} - Number of alive players in team 1 (shows how many players on team 1 are still in the match)
+# {team2_alive} - Number of alive players in team 2 (shows how many players on team 2 are still in the match)
+# {team1_total} - Total number of players in team 1 (shows how many players started on team 1)
+# {team2_total} - Total number of players in team 2 (shows how many players started on team 2)
+#
+# Duel-specific placeholders:
+# {player1} - Name of player 1/challenger (displays the name of the player who initiated the duel)
+# {player2} - Name of player 2/target (displays the name of the player who accepted the duel)
+# {player1_wins} - Number of rounds won by player 1 (shows how many rounds the challenger has won)
+# {player2_wins} - Number of rounds won by player 2 (shows how many rounds the target has won)
+# {current_round} - Current round number (displays which round is currently being played)
+# {total_rounds} - Total rounds needed to win (displays how many rounds a player needs to win the duel)
+# {rounds_to_win} - Number of rounds needed to win the duel (same as total_rounds)
+# {your_wins} - Number of rounds you have won (displays your own round wins)
+# {opponent_wins} - Number of rounds your opponent has won (displays your opponent's round wins)
+# {player_score} - Your current score in the duel (displays your own round wins, same as your_wins)
+# {opponent_score} - Your opponent's score in the duel (displays your opponent's round wins, same as opponent_wins)
+# {opponent} - Name of your opponent in the duel (displays the name of the player you're dueling against)
+#
+# Party duel placeholders:
+# {party1_name} - Name of party 1/challenger's party (displays the name of the party that initiated the duel)
+# {party2_name} - Name of party 2/target's party (displays the name of the party that accepted the duel)
+# {party1_alive} - Number of alive players in party 1 (shows how many players in the challenger's party are still fighting)
+# {party1_total} - Total number of players in party 1 (shows how many players started in the challenger's party)
+# {party2_alive} - Number of alive players in party 2 (shows how many players in the target's party are still fighting)
+# {party2_total} - Total number of players in party 2 (shows how many players started in the target's party)
+#
+# Queue match placeholders:
+# {opponent} - Name of opponent in 1v1 queue match (displays the name of your opponent)
+# {team_name} - Your team's name in team queue matches (displays your team's name if set)
+# {opponent_team_name} - Opponent team's name in team queue matches (displays opponent team's name if set)

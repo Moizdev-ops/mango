@@ -18,6 +18,9 @@ import com.sk89q.worldedit.session.ClipboardHolder;
 import me.moiz.mangoparty.MangoParty;
 import me.moiz.mangoparty.models.Arena;
 import org.bukkit.Bukkit;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.logging.Level;
 import org.bukkit.Location;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.YamlConfiguration;
@@ -41,6 +44,7 @@ public class ArenaManager {
     private YamlConfiguration arenasConfig;
     private double defaultXOffset = 500.0; // Default X-axis offset for arena instances
     private double defaultZOffset = 500.0; // Default Z-axis offset for arena instances
+    private ExecutorService asyncExecutor = Executors.newFixedThreadPool(3); // Thread pool for async operations
     
     public ArenaManager(MangoParty plugin) {
         this.plugin = plugin;
@@ -462,16 +466,37 @@ public class ArenaManager {
         }
     }
     
-    public void reserveArena(String arenaName) {
+    /**
+     * Reserves an arena so it cannot be used for other matches.
+     * 
+     * @param arenaName The name of the arena to reserve
+     * @return True if the arena was successfully reserved, false otherwise
+     */
+    public boolean reserveArena(String arenaName) {
+        if (arenaName == null) return false;
+        
+        // Check if already reserved
+        if (reservedArenas.contains(arenaName)) {
+            return false;
+        }
+        
         reservedArenas.add(arenaName);
+        plugin.getLogger().fine("Reserved arena: " + arenaName);
+        return true;
     }
     
     public void releaseArena(String arenaName) {
         reservedArenas.remove(arenaName);
     }
     
+    /**
+     * Checks if an arena is currently reserved.
+     * 
+     * @param arenaName The name of the arena to check
+     * @return True if the arena is reserved, false otherwise
+     */
     public boolean isArenaReserved(String arenaName) {
-        return reservedArenas.contains(arenaName);
+        return arenaName != null && reservedArenas.contains(arenaName);
     }
     
     public void saveArena(Arena arena) {
@@ -606,7 +631,19 @@ public class ArenaManager {
     // Cache for schematics to avoid loading from disk each time
     private Map<String, Clipboard> schematicCache = new ConcurrentHashMap<>();
     
+    /**
+     * Pastes a schematic for an arena.
+     * Optimized with caching and asynchronous loading.
+     * 
+     * @param arena The arena to paste the schematic for
+     * @return True if the paste operation was initiated successfully, false otherwise
+     */
     public boolean pasteSchematic(Arena arena) {
+        if (arena == null || !arena.isComplete()) {
+            plugin.getLogger().warning("Cannot paste schematic for incomplete arena.");
+            return false;
+        }
+        
         try {
             String schematicName;
             
@@ -630,20 +667,11 @@ public class ArenaManager {
                     return false;
                 }
                 
-                ClipboardFormat format = ClipboardFormats.findByAlias("schem");
-                if (format == null) {
-                    format = ClipboardFormats.findByAlias("schematic");
-                }
-                if (format == null) {
-                    plugin.getLogger().severe("No schematic format found for reading!");
-                    return false;
-                }
+                clipboard = loadSchematicFromFile(schematicFile);
+                if (clipboard == null) return false;
                 
-                try (ClipboardReader reader = format.getReader(new FileInputStream(schematicFile))) {
-                    clipboard = reader.read();
-                    // Cache the clipboard for future use
-                    schematicCache.put(schematicName, clipboard);
-                }
+                // Cache for future use
+                schematicCache.put(schematicName, clipboard);
             }
             
             com.sk89q.worldedit.world.World world = BukkitAdapter.adapt(arena.getCorner1().getWorld());
@@ -651,8 +679,8 @@ public class ArenaManager {
             // Create a final copy of the clipboard for use in the lambda
             final Clipboard finalClipboard = clipboard;
             
-            // Use async operation for better performance
-            Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
+            // Use our thread pool for better resource management
+            asyncExecutor.submit(() -> {
                 try (EditSession editSession = WorldEdit.getInstance().newEditSession(world)) {
                     // Calculate the minimum point where the schematic should be pasted
                     BlockVector3 pasteLocation = BlockVector3.at(
@@ -671,16 +699,39 @@ public class ArenaManager {
                         .build();
                     
                     Operations.complete(operation);
+                    plugin.getLogger().fine("Schematic pasted successfully for " + arena.getName());
                 } catch (Exception e) {
-                    plugin.getLogger().severe("Failed to paste schematic for arena " + arena.getName() + ": " + e.getMessage());
+                    plugin.getLogger().log(Level.SEVERE, "Failed to paste schematic for arena " + arena.getName(), e);
                 }
             });
             
             return true;
         } catch (Exception e) {
-            plugin.getLogger().severe("Failed to paste schematic for arena " + arena.getName() + ": " + e.getMessage());
-            e.printStackTrace();
+            plugin.getLogger().log(Level.SEVERE, "Failed to paste schematic for arena " + arena.getName(), e);
             return false;
+        }
+    }
+    
+    /**
+     * Loads a schematic from a file.
+     * 
+     * @param schematicFile The file to load the schematic from
+     * @return The loaded clipboard, or null if loading failed
+     */
+    private Clipboard loadSchematicFromFile(File schematicFile) {
+        try {
+            ClipboardFormat format = ClipboardFormats.findByFile(schematicFile);
+            if (format == null) {
+                plugin.getLogger().warning("Unknown schematic format for file: " + schematicFile.getName());
+                return null;
+            }
+            
+            try (ClipboardReader reader = format.getReader(new FileInputStream(schematicFile))) {
+                return reader.read();
+            }
+        } catch (Exception e) {
+            plugin.getLogger().log(Level.WARNING, "Error loading schematic from file: " + schematicFile.getName(), e);
+            return null;
         }
     }
     

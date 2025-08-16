@@ -157,7 +157,7 @@ Continue building your app on:
 ## 📋 Commands
 
 ### **Party Commands**
-\`\`\`
+```
 /party create                    - Create a new party
 /party invite <player>           - Invite a player to your party
 /party join <leader>             - Join a party (if invited)
@@ -169,23 +169,23 @@ Continue building your app on:
 /party acceptduel <challenger>   - Accept a party duel challenge
 /party declineduel <challenger>  - Decline a party duel challenge
 /party info                      - View party information
-\`\`\`
+```
 
 ### **Queue Commands**
-\`\`\`
+```
 /1v1queue                        - Join 1v1 queue (opens kit selection)
 /2v2queue                        - Join 2v2 queue (opens kit selection)
 /3v3queue                        - Join 3v3 queue (opens kit selection)
 /leavequeue                      - Leave current queue
-\`\`\`
+```
 
 ### **Spectator Commands**
-\`\`\`
+```
 /spectate <player>               - Spectate a specific player in your match
-\`\`\`
+```
 
 ### **Admin Commands**
-\`\`\`
+```
 /mango arena editor              - Open arena list GUI
 /mango arena editor <name>       - Open editor for specific arena
 /mango arena create <name>       - Create a new arena
@@ -197,13 +197,12 @@ Continue building your app on:
 /mango arena save <name>         - Save arena schematic
 /mango arena list                - List all arenas
 /mango arena delete <name>       - Delete an arena
-
 /mango kit editor                - Open kit management GUI
 /mango create kit <name>         - Create kit from current inventory
 
 /mango addkitgui <kit> <mode> [slot] - Add kit to GUI configuration
 /mango setspawn                  - Set server spawn location
-\`\`\`
+```
 
 ## 🏟️ Arena Duplication System
 
@@ -298,390 +297,142 @@ MangoParty features a powerful arena duplication system that allows for concurre
 
 ## 🔧 Installation
 
-### **Requirements**
-- **Minecraft Server**: 1.21.4 (Spigot/Paper recommended)
-- **Java**: 17 or higher
-- **Dependencies**:
-  - WorldEdit (for arena schematics)
-  - FastAsyncWorldEdit (optional, for better performance)
+1. Download the latest release from the GitHub repository
+2. Place the JAR file in your server's `plugins` folder
+3. Start or restart your server
+4. Configure the plugin settings in the generated configuration files
 
-### **Installation Steps**
+## 📦 Dependencies
 
-1. **Download the Plugin**
-   ```bash
-   # Download MangoParty-1.0.0.jar from releases
-   wget https://github.com/your-repo/mangoparty/releases/download/v1.0.0/MangoParty-1.0.0.jar
-   ```
+- **Required**:
+  - Spigot/Paper 1.21.4+
+  - WorldEdit or FastAsyncWorldEdit
 
-2. **Install Dependencies**
-   - Download and install [WorldEdit](https://dev.bukkit.org/projects/worldedit)
-   - Optionally install [FastAsyncWorldEdit](https://www.spigotmc.org/resources/fastasyncworldedit.13932/)
+- **Optional**:
+  - PlaceholderAPI (for additional placeholders)
+  - Vault (for economy integration)
 
-3. **Server Setup**
-   ```bash
-   # Place the plugin in your plugins folder
-   cp MangoParty-1.0.0.jar /path/to/server/plugins/
-   
-   # Start your server
-   java -jar server.jar
-   \`\`\`
+## 🛠️ Configuration
 
-4. **Initial Configuration**
-   \`\`\`bash
-   # Set server spawn point
-   /mango setspawn
-   
-   # Create your first arena
-   /mango arena create arena1
-   /mango arena corner1 arena1    # Set at one corner
-   /mango arena corner2 arena1    # Set at opposite corner
-   /mango arena center arena1     # Set center point
-   /mango arena spawn1 arena1     # Set team 1 spawn
-   /mango arena spawn2 arena1     # Set team 2 spawn
-   /mango arena save arena1       # Save the schematic
-   \`\`\`
+### **config.yml**
+```yaml
+# Debug mode (enables additional logging)
+debug: false
 
-## ⚙️ Configuration
-
-### **Main Configuration** (`config.yml`)
-\`\`\`yaml
-# Party Settings
+# Party settings
 party:
-  max-size: 8                    # Maximum party size
-  invite-timeout: 60             # Invite timeout in seconds
-  auto-disband: true             # Auto-disband empty parties
+  max-size: 8
+  invite-timeout: 60
 
-# Match Settings
+# Match settings
 match:
-  countdown-duration: 5          # Countdown before match starts
-  min-players: 2                 # Minimum players to start
-  max-duration: 30               # Max match duration (minutes)
+  countdown: 5
+  min-players: 2
+  max-duration: 300
 
-# Arena Settings
+# Arena settings
 arena:
-  auto-regenerate: true          # Auto-regenerate arenas after matches
-  regeneration-delay: 5          # Delay before regeneration
+  auto-regenerate: true
+  regeneration-delay: 5
 
-# Scoreboard Configuration
+# Scoreboard settings
 scoreboard:
+  update-interval: 20
   title: "&#FFD700&lMangoParty"
+```
+
+### **scoreboard.yml**
+```yaml
+global:
+  update-interval: 20
+  title: "&#FFD700&lMangoParty"
+
+party_ffa:
+  title: "&#FFD700&lParty FFA"
   lines:
-    - ""
-    - "&#FF6B6BArena: &#FFFFFF{arena}"
-    - "&#4ECDC4Kit: &#FFFFFF{kit}"
-    - "&#45B7D1Mode: &#FFFFFF{match_type}"
-    - ""
-    - "&#FFE66DStatus: {status}"
-    - "&#4ECDC4Players: &#FFFFFF{players_alive}/{players_total}"
-    - ""
-    - "&#FFEAA7Stats:"
-    - "  &#FF7675Kills: &#FFFFFF{kills}"
-    - "  &#74B9FFDeaths: &#FFFFFF{deaths}"
-    - ""
-    - "&#A29BFETime: &#FFFFFF{time}"
-\`\`\`
+    - "&7"
+    - "&#FF6347Arena: &f%arena%"
+    - "&#FF6347Kit: &f%kit%"
+    - "&7"
+    - "&#FF6347Players: &f%alive%/%total%"
+    - "&#FF6347Kills: &f%kills%"
+    - "&7"
+    - "&#FF6347Time: &f%time%"
+    - "&7"
+    - "&#FFD700play.yourserver.com"
 
-### **GUI Configuration**
-The plugin automatically generates GUI configuration files:
+party_split:
+  title: "&#FFD700&lParty Split"
+  lines:
+    - "&7"
+    - "&#FF6347Arena: &f%arena%"
+    - "&#FF6347Kit: &f%kit%"
+    - "&7"
+    - "&#FF6347Team 1: &f%team1_alive%/%team1_total%"
+    - "&#FF6347Team 2: &f%team2_alive%/%team2_total%"
+    - "&7"
+    - "&#FF6347Your Kills: &f%kills%"
+    - "&7"
+    - "&#FF6347Time: &f%time%"
+    - "&7"
+    - "&#FFD700play.yourserver.com"
+```
 
-- `gui/split.yml` - Party split match kits
-- `gui/ffa.yml` - Party FFA match kits
-- `gui/1v1kits.yml` - 1v1 queue kits
-- `gui/2v2kits.yml` - 2v2 queue kits
-- `gui/3v3kits.yml` - 3v3 queue kits
+## 🔄 Recent Code Improvements
 
-### **Arena Configuration** (`arenas.yml`)
-\`\`\`yaml
-arenas:
-  arena1:
-    world: "world"
-    corner1:
-      x: 100.0
-      y: 64.0
-      z: 100.0
-    corner2:
-      x: 150.0
-      y: 80.0
-      z: 150.0
-    center:
-      x: 125.0
-      y: 65.0
-      z: 125.0
-    spawn1:
-      x: 110.0
-      y: 65.0
-      z: 125.0
-    spawn2:
-      x: 140.0
-      y: 65.0
-      z: 125.0
-\`\`\`
+### **1. Code Organization**
+- Reorganized class member variables in `MangoParty.java` for better readability
+- Grouped related variables (Managers, GUIs, Listeners) with clear comments
 
-## 🎯 Usage Guide
+### **2. Method Extraction**
+- Extracted initialization logic into separate methods in `MangoParty.java`:
+  - `initializeManagers()` - Centralizes manager initialization
+  - `initializeGuis()` - Handles GUI component creation
+  - `initializeListeners()` - Creates listener instances
+  - `registerListeners()` - Registers all event listeners
+  - `cleanupManagers()` - Handles proper shutdown
 
-### **Setting Up Your First Arena**
+### **3. Command Registration**
+- Created a helper method `registerCommand()` to streamline command registration
+- Added null checks and error logging for failed command registrations
 
-1. **Create the Arena Structure**
-   - Build your arena in the world
-   - Make sure it has clear boundaries
-   - Include spawn points for both teams
+### **4. Utility Improvements**
+- Optimized `HexUtils.java` by moving version check to static initializer
+- Added comprehensive Javadoc comments to utility classes
 
-2. **Configure the Arena**
-   \`\`\`bash
-   /mango arena create myarena
-   # Stand at one corner and run:
-   /mango arena corner1 myarena
-   # Stand at the opposite corner and run:
-   /mango arena corner2 myarena
-   # Stand at the center and run:
-   /mango arena center myarena
-   # Set spawn points for teams
-   /mango arena spawn1 myarena
-   /mango arena spawn2 myarena
-   # Save the schematic
-   /mango arena save myarena
-   \`\`\`
+### **5. Scoreboard System Refactoring**
+- Improved `ScoreboardManager.java` with helper methods:
+  - `getConfigSectionForMatchType()` - Determines scoreboard config section
+  - `getScoreboardTitle()` - Retrieves and colorizes titles
+  - `createScoreboardsForPlayers()` - Handles bulk scoreboard creation
+  - `createScoreboardForPlayer()` - Creates individual player scoreboards
+  - `startUpdateTask()` - Manages scoreboard update tasks
+  - `getQueueConfigSection()` - Handles queue-specific configurations
+  - `updatePlayerMatchScoreboard()` - Updates scoreboard for a specific player
+  - `processDuelPlaceholders()` - Processes placeholders for duel scoreboards
+  - `processTeamPlaceholders()` - Handles team-specific placeholder processing
+  - `formatMatchDuration()` - Formats match duration into readable time string
 
-### **Creating Custom Kits**
+### **6. Null Safety**
+- Added null checks to critical methods to prevent NullPointerExceptions
+- Improved parameter validation in public methods
 
-1. **Prepare Your Kit**
-   - Equip the items you want in the kit
-   - Include armor, weapons, and consumables
-
-2. **Create the Kit**
-   \`\`\`bash
-   /mango create kit warrior
-   \`\`\`
-
-3. **Configure Kit Rules**
-   \`\`\`bash
-   /mango kit editor
-   # Click on your kit to configure rules
-   \`\`\`
-
-4. **Add Kit to GUIs**
-   \`\`\`bash
-   # Add to party split GUI
-   /mango addkitgui warrior split 10
-   
-   # Add to 1v1 queue GUI
-   /mango addkitgui warrior 1v1 11
-   \`\`\`
-
-### **Starting Matches**
-
-#### **Party Matches**
-1. Create a party: `/party create`
-2. Invite friends: `/party invite <player>`
-3. Start a match: `/party match`
-4. Select match type and kit
-
-#### **Queue Matches**
-1. Join a queue: `/1v1queue`, `/2v2queue`, or `/3v3queue`
-2. Select your kit
-3. Wait for matchmaking
-4. Get automatically matched with other players
-
-#### **Party vs Party Duels**
-1. Create parties (both leaders)
-2. Challenge: `/party challenge <other_leader>`
-3. Or use GUI: `/party match` → Party vs Party
-4. Accept/decline the challenge
-5. Fight in epic team battles!
-
-## 🛠️ Development
-
-### **Building from Source**
-\`\`\`bash
-# Clone the repository
-git clone https://github.com/your-repo/mangoparty.git
-cd mangoparty
-
-# Build with Maven
-mvn clean compile package
-
-# The compiled JAR will be in target/
-\`\`\`
-
-### **Project Structure**
-\`\`\`
-src/main/java/me/moiz/mangoparty/
-├── commands/           # Command handlers
-├── config/            # Configuration management
-├── gui/               # GUI systems
-├── listeners/         # Event listeners
-├── managers/          # Core managers
-├── models/            # Data models
-└── utils/             # Utility classes
-\`\`\`
-
-### **Key Components**
-
-- **PartyManager**: Handles party creation, management, and member operations
-- **MatchManager**: Controls match lifecycle, team assignment, and game states
-- **ArenaManager**: Manages arena loading, schematic operations, and availability
-- **QueueManager**: Handles queue operations and automatic matchmaking
-- **GuiManager**: Manages all GUI interactions and displays
-- **KitManager**: Handles kit creation, loading, and application
-
-## 🔌 API Integration
-
-### **Events**
-The plugin fires custom events that other plugins can listen to:
-
-\`\`\`java
-// Match events
-@EventHandler
-public void onMatchStart(MatchStartEvent event) {
-    Match match = event.getMatch();
-    // Handle match start
-}
-
-@EventHandler
-public void onMatchEnd(MatchEndEvent event) {
-    Match match = event.getMatch();
-    UUID winner = event.getWinner();
-    // Handle match end
-}
-
-// Party events
-@EventHandler
-public void onPartyCreate(PartyCreateEvent event) {
-    Party party = event.getParty();
-    Player leader = event.getLeader();
-    // Handle party creation
-}
-\`\`\`
-
-### **Hooks**
-\`\`\`java
-// Get the MangoParty instance
-MangoParty plugin = (MangoParty) Bukkit.getPluginManager().getPlugin("MangoParty");
-
-// Check if player is in a party
-boolean inParty = plugin.getPartyManager().hasParty(player);
-
-// Get player's current match
-Match match = plugin.getMatchManager().getPlayerMatch(player);
-
-// Check if player is in queue
-boolean inQueue = plugin.getQueueManager().isInQueue(player);
-\`\`\`
-
-## 🎨 Customization
-
-### **Scoreboard Placeholders**
-Available placeholders for scoreboard customization:
-
-- `{arena}` - Arena name
-- `{kit}` - Kit display name
-- `{match_type}` - Match type (SPLIT, FFA, etc.)
-- `{status}` - Player status (Alive, Spectating)
-- `{players_alive}` - Number of alive players
-- `{players_total}` - Total players in match
-- `{spectators}` - Number of spectators
-- `{kills}` - Player's kill count
-- `{deaths}` - Player's death count
-- `{time}` - Match duration
-- `{your_team_alive}` - Your team's alive count
-- `{opponent_team_alive}` - Opponent team's alive count
-
-### **Color Codes**
-The plugin supports both legacy (`&c`) and hex color codes (`&#FF0000`):
-
-\`\`\`yaml
-title: "&#FFD700&lMangoParty"  # Gold with bold
-subtitle: "&#FF6B6B&oWelcome!" # Red with italic
-\`\`\`
-
-## 🐛 Troubleshooting
-
-### **Common Issues**
-
-#### **"No available arenas" Error**
-- **Cause**: No arenas configured or all arenas in use
-- **Solution**: Create more arenas or wait for current matches to end
-
-#### **Schematic Not Loading**
-- **Cause**: WorldEdit not installed or schematic file corrupted
-- **Solution**: Install WorldEdit and regenerate arena schematic
-
-#### **Queue Not Working**
-- **Cause**: No kits configured for queue mode
-- **Solution**: Add kits to queue GUIs using `/mango addkitgui`
-
-#### **Players Not Teleporting**
-- **Cause**: Arena spawn points not set correctly
-- **Solution**: Reconfigure arena spawn points
-
-### **Debug Commands**
-\`\`\`bash
-# Check arena status
-/mango arena list
-
-# Verify kit configuration
-/mango kit editor
-
-# Check plugin version
-/version MangoParty
-\`\`\`
-
-## 📈 Performance
-
-### **Optimization Tips**
-
-1. **Arena Management**
-   - Use smaller schematics for faster regeneration
-   - Limit the number of concurrent matches
-   - Use FastAsyncWorldEdit for better performance
-
-2. **Database Optimization**
-   - Regular cleanup of old match data
-   - Optimize scoreboard update frequency
-
-3. **Memory Management**
-   - Monitor plugin memory usage
-   - Regular server restarts for long-running servers
-
-## 🤝 Contributing
-
-We welcome contributions! Please follow these guidelines:
-
-1. **Fork the Repository**
-2. **Create a Feature Branch**
-   \`\`\`bash
-   git checkout -b feature/amazing-feature
-   \`\`\`
-3. **Make Your Changes**
-4. **Test Thoroughly**
-5. **Submit a Pull Request**
-
-### **Code Style**
-- Use 4 spaces for indentation
-- Follow Java naming conventions
-- Add JavaDoc comments for public methods
-- Include unit tests for new features
+### **7. Code Immutability**
+- Declared appropriate fields as `final` to ensure they're assigned only once
+- Enhanced code safety and readability
 
 ## 📄 License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the MIT License - see the LICENSE file for details.
 
-## 🙏 Acknowledgments
+## 👥 Credits
 
-- **WorldEdit Team** - For the amazing schematic system
-- **FastBoard** - For efficient scoreboard management
-- **Spigot/Paper** - For the excellent server platform
-- **Community** - For feedback and feature suggestions
-
-## 📞 Support
-
-- **Discord**: [Join our Discord](https://discord.gg/your-server)
-- **Issues**: [GitHub Issues](https://github.com/your-repo/mangoparty/issues)
-- **Wiki**: [Plugin Wiki](https://github.com/your-repo/mangoparty/wiki)
-- **Email**: support@mangoparty.com
+- **Author:** Moiz
+- **Contributors:** [List of contributors]
+- **Libraries:**
+  - FastBoard for scoreboard management
+  - WorldEdit/FAWE for arena management
 
 ---
 
-**Made with ❤️ by the MangoParty Team**
-
-*Transform your Minecraft server into an epic PvP battleground!*
+© 2023 MangoParty. All rights reserved.

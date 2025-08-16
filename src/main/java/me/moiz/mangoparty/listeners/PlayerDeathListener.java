@@ -5,11 +5,13 @@ import me.moiz.mangoparty.models.Duel;
 import me.moiz.mangoparty.models.Match;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
+import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityDamageEvent;
+import org.bukkit.event.entity.EntityResurrectEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.potion.PotionEffect;
@@ -30,8 +32,14 @@ public class PlayerDeathListener implements Listener {
         this.plugin = plugin;
     }
     
+    /**
+     * Handle fatal damage for players in duels or matches
+     * For players not in duels or matches, vanilla death mechanics are preserved
+     * IMPORTANT: This listener ONLY affects players in duels or matches
+     */
     @EventHandler(priority = EventPriority.HIGH)
     public void onPlayerDamage(EntityDamageEvent event) {
+        // Only handle player damage
         if (!(event.getEntity() instanceof Player)) {
             return;
         }
@@ -43,29 +51,58 @@ public class PlayerDeathListener implements Listener {
         // Check if player is in a match
         boolean isInMatch = plugin.getMatchManager().isInMatch(player);
         
-        // Only handle damage for players in duels or matches
+        // IMPORTANT: Only handle damage for players in duels or matches
+        // This ensures vanilla mechanics work for all other players
         if (!isInDuel && !isInMatch) {
-            return;
+            return; // Let vanilla handle damage for non-match players
         }
         
-        // Check if player is invincible
+        // Debug information - only log if debug is enabled
+        boolean debug = plugin.getConfig().getBoolean("debug", false);
+        if (debug) {
+            plugin.getLogger().info("Custom death handling for player in " + 
+                                  (isInDuel ? "duel" : "match") + ": " + player.getName());
+        }
+        
+        // Check if player is invincible (for match/duel players only)
         if (invincibilityTimers.containsKey(player.getUniqueId()) && 
             System.currentTimeMillis() < invincibilityTimers.get(player.getUniqueId())) {
             event.setCancelled(true);
             return;
         }
         
-        // Check if the entity will die from this damage
+        // Only handle fatal damage
         if ((player.getHealth() - event.getFinalDamage()) <= 0) {
-            // Cancel the damage event to prevent actual death
+            // Check for totem of undying BEFORE handling death
+            boolean hasTotem = false;
+            
+            // Check main hand
+            ItemStack mainHand = player.getInventory().getItemInMainHand();
+            if (mainHand != null && mainHand.getType() == Material.TOTEM_OF_UNDYING) {
+                hasTotem = true;
+            }
+            
+            // Check off hand
+            ItemStack offHand = player.getInventory().getItemInOffHand();
+            if (offHand != null && offHand.getType() == Material.TOTEM_OF_UNDYING) {
+                hasTotem = true;
+            }
+            
+            // If player has totem, let vanilla handle it - don't cancel or handle manually
+            if (hasTotem) {
+                if (debug) {
+                    plugin.getLogger().info("Player has totem, letting vanilla handle it: " + player.getName());
+                }
+                return; // Let totem activate naturally
+            }
+            
+            // Cancel the damage event to prevent vanilla death
             event.setCancelled(true);
             
-            // Check if player is in a duel
+            // Handle death based on game mode
             if (isInDuel) {
                 handleDuelPlayerDeath(player);
-            }
-            // Check if player is in a party match
-            else if (isInMatch) {
+            } else if (isInMatch) {
                 Match match = plugin.getMatchManager().getPlayerMatch(player);
                 handlePartyPlayerDeath(player, match);
             }
@@ -73,94 +110,42 @@ public class PlayerDeathListener implements Listener {
     }
     
     /**
-     * Handle player deaths in duels without triggering the vanilla death event
+     * Handle player deaths in duels - optimized for next round handling
      */
     private void handleDuelPlayerDeath(Player player) {
-        // Store death location with exact yaw/pitch preserved
-        final Location deathLocation = player.getLocation().clone();
-        // Slightly raise Y coordinate to avoid spawning inside blocks
-        deathLocation.setY(deathLocation.getY() + 0.1);
-        
-        // Play death animation without actually killing the player
+        // Play death animation
         player.playEffect(org.bukkit.EntityEffect.DEATH);
         
-        // Set health to full
+        // Set health to full immediately
         player.setHealth(20.0);
         
-        // Clear inventory immediately
-        if (!savedInventories.containsKey(player.getUniqueId())) {
-            saveInventory(player);
-        }
+        // Clear inventory and make invincible
         player.getInventory().clear();
-        
-        // Make player invincible for 2 seconds
         player.setInvulnerable(true);
-        invincibilityTimers.put(player.getUniqueId(), System.currentTimeMillis() + 2000);
-        player.sendMessage("§aYou are invincible for 2 seconds after death.");
         
-        // Teleport player back to death location and handle death with 2 second delay
-        new BukkitRunnable() {
-            @Override
-            public void run() {
-                if (player.isOnline()) {
-                    player.teleport(deathLocation);
-                    // Handle the death in DuelManager
-                    plugin.getDuelManager().handlePlayerDeath(player);
-                }
-            }
-        }.runTaskLater(plugin, 40L); // Run after 2 seconds (40 ticks)
-        
-        // Remove invincibility after 2 seconds
-        new BukkitRunnable() {
-            @Override
-            public void run() {
-                player.setInvulnerable(false);
-            }
-        }.runTaskLater(plugin, 40L); // 2 seconds = 40 ticks
+        // Handle death directly in DuelManager - no delays needed
+        plugin.getDuelManager().handlePlayerDeath(player);
     }
     
     /**
-     * Handle player deaths in party matches without triggering the vanilla death event
+     * Handle player deaths in party matches - optimized for spectator mode
      */
     private void handlePartyPlayerDeath(Player player, Match match) {
-        // Store death location
-        final Location deathLocation = player.getLocation().clone();
-        
         // Handle killer if exists
         Player killer = player.getKiller();
         if (killer != null && plugin.getMatchManager().isInMatch(killer)) {
             match.addKill(killer.getUniqueId());
         }
         
-        // Eliminate player from match
+        // Eliminate player from match and add to spectators
         plugin.getMatchManager().eliminatePlayer(player, match);
         
         // Send elimination message
         player.sendTitle("§c§lELIMINATED", "§7You are now spectating", 10, 40, 10);
         
-        // Save inventory and clear it immediately
-        if (!savedInventories.containsKey(player.getUniqueId())) {
-            saveInventory(player);
-        }
+        // Clear inventory and make spectator immediately
         player.getInventory().clear();
-        
-        // Make player invincible for 2 seconds
-        player.setInvulnerable(true);
-        invincibilityTimers.put(player.getUniqueId(), System.currentTimeMillis() + 2000);
-        player.sendMessage("§aYou are invincible for 2 seconds after death.");
-        
-        // Make player a spectator after 2 seconds
-        new BukkitRunnable() {
-            @Override
-            public void run() {
-                if (player.isOnline()) {
-                    // Keep player at death location
-                    player.teleport(deathLocation);
-                    // Make player a spectator
-                    makeSpectator(player);
-                }
-            }
-        }.runTaskLater(plugin, 40L); // Run after 2 seconds (40 ticks)
+        makeSpectator(player);
         
         // Announce elimination to all match players
         for (Player matchPlayer : match.getAllPlayers()) {
@@ -174,6 +159,46 @@ public class PlayerDeathListener implements Listener {
         plugin.getScoreboardManager().updateMatchScoreboards(match);
     }
     
+    /**
+     * Handle totem of undying activation for players in duels/matches
+     * This ensures proper handling after totem saves the player
+     * For players not in duels or matches, vanilla resurrection mechanics are preserved
+     */
+    @EventHandler(priority = EventPriority.HIGHEST)
+    public void onEntityResurrect(EntityResurrectEvent event) {
+        if (!(event.getEntity() instanceof Player)) {
+            return;
+        }
+        
+        Player player = (Player) event.getEntity();
+        
+        // Check if player is in a duel or match
+        boolean isInDuel = plugin.getDuelManager().isInDuel(player);
+        boolean isInMatch = plugin.getMatchManager().isInMatch(player);
+        
+        // IMPORTANT: Only handle resurrection for players in duels or matches
+        // This ensures vanilla mechanics work for all other players
+        if (!isInDuel && !isInMatch) {
+            return; // Let vanilla handle resurrection for non-match players
+        }
+        
+        // Allow totem to activate
+        event.setCancelled(false);
+        
+        // After totem activates, handle the post-resurrection effects
+        if (isInDuel) {
+            // For duels, just ensure they're properly positioned
+            player.setHealth(20.0);
+            player.setFoodLevel(20);
+            player.setSaturation(20);
+        } else if (isInMatch) {
+            // For party matches, ensure they're still in the match
+            player.setHealth(20.0);
+            player.setFoodLevel(20);
+            player.setSaturation(20);
+        }
+    }
+
     /**
      * Make a player a spectator in plugin's custom spectator mode
      */
@@ -202,63 +227,9 @@ public class PlayerDeathListener implements Listener {
         player.setInvulnerable(true);
     }
     
-    @EventHandler(priority = EventPriority.HIGHEST)
-    public void onEntityDamage(EntityDamageEvent event) {
-        if (!(event.getEntity() instanceof Player)) {
-            return;
-        }
-        
-        Player player = (Player) event.getEntity();
-        
-        // Check if the entity will die from this damage
-        if ((player.getHealth() - event.getFinalDamage()) <= 0) {
-            // Cancel the damage event to prevent actual death
-            event.setCancelled(true);
-            
-            // Check if player is in a duel
-            boolean isInDuel = plugin.getDuelManager().isInDuel(player);
-            // Check if player is in a match
-            boolean isInMatch = plugin.getMatchManager().isInMatch(player);
-            
-            // Only handle damage for players in duels or matches
-            if (isInDuel) {
-                handleDuelPlayerDeath(player);
-            } else if (isInMatch) {
-                Match match = plugin.getMatchManager().getPlayerMatch(player);
-                handlePartyPlayerDeath(player, match);
-            }
-        }
-    }
+
     
-    @EventHandler(priority = EventPriority.HIGHEST)
-    public void onPlayerDeath(PlayerDeathEvent event) {
-        Player player = event.getEntity();
-        
-        // Prevent drops and exp loss for all plugin-managed players
-        event.setKeepInventory(true);
-        event.setKeepLevel(true);
-        event.getDrops().clear();
-        event.setDroppedExp(0);
-        
-        // Check if player is in a duel
-        if (plugin.getDuelManager().isInDuel(player)) {
-            // Cancel the death event to prevent respawn
-            player.setHealth(20.0);
-            
-            // Handle the death manually
-            handleDuelPlayerDeath(player);
-        }
-        // Check if player is in a party match
-        else if (plugin.getMatchManager().getPlayerMatch(player) != null) {
-            Match match = plugin.getMatchManager().getPlayerMatch(player);
-            
-            // Cancel the death event to prevent respawn
-            player.setHealth(20.0);
-            
-            // Handle the death manually
-            handlePartyPlayerDeath(player, match);
-        }
-    }
+
 
     public void saveInventory(Player player) {
         savedInventories.put(player.getUniqueId(), player.getInventory().getContents().clone());
