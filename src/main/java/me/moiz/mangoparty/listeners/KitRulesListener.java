@@ -76,7 +76,26 @@ public class KitRulesListener implements Listener {
         }
     }
     
-    // Removed custom damage multiplier to use vanilla damage handling
-    // This allows resistance effects and other vanilla mechanics to work properly
-    // Only the death listener will handle players who are in duels or party matches
+    @EventHandler(priority = EventPriority.LOWEST) // Use LOWEST to run before other damage modifiers
+    public void onEntityDamageByEntity(EntityDamageByEntityEvent event) {
+        if (!(event.getEntity() instanceof Player)) return;
+        if (!(event.getDamager() instanceof Player)) return;
+        
+        Player victim = (Player) event.getEntity();
+        Player attacker = (Player) event.getDamager();
+        
+        Match match = plugin.getMatchManager().getPlayerMatch(victim);
+        if (match == null) return;
+        
+        // Check if both players are in the same match
+        if (!plugin.getMatchManager().isInSameMatch(victim, attacker)) return;
+        
+        Kit kit = match.getKit();
+        if (kit != null && kit.getRules().getDamageMultiplier() > 0) {
+            // Apply damage multiplier but let vanilla handle the actual damage
+            // This ensures resistance effects and other vanilla mechanics still work
+            double newDamage = event.getDamage() * kit.getRules().getDamageMultiplier();
+            event.setDamage(newDamage);
+        }
+    }
 }
