@@ -230,7 +230,7 @@ public class MatchManager {
     public Match startMatch(Party party, Arena arena, Kit kit, String matchType) {
         if (party == null || arena == null || kit == null || matchType == null) {
             plugin.getLogger().warning("Cannot start match: Missing required parameters");
-            return false;
+            return null;
         }
         
         if (party.isInMatch()) {
@@ -528,7 +528,7 @@ public class MatchManager {
         // Start countdown
         startCountdown(match);
         
-        return match;
+        return true;
     }
 
     /**
@@ -583,7 +583,7 @@ public class MatchManager {
         // Use match object from QueueManager
         
         // Assign teams based on mode
-        if (!assignQueueTeams(match, mode, players)) {
+        if (!assignQueueTeams(match, players, mode)) {
             plugin.getLogger().warning("Failed to assign teams for queue match: " + match.getId());
             return false;
         }
