@@ -287,11 +287,15 @@ public class QueueManager {
                 return;
             }
             
-            // Start the match
-            Match match = plugin.getMatchManager().startQueueMatch(tempParty, arena, kit, mode, players);
+            // Create match object
+            String matchId = "queue_" + mode + "_" + System.currentTimeMillis() + "_" + UUID.randomUUID().toString().substring(0, 8);
+            Match match = new Match(matchId, tempParty, arena, kit, "queue_" + mode);
             
-            // Check if match was created successfully
-            if (match == null) {
+            // Start the match
+            boolean matchStarted = plugin.getMatchManager().startQueueMatch(tempParty, arena, kit, mode, players, match);
+            
+            // Check if match was started successfully
+            if (!matchStarted) {
                 plugin.getLogger().warning("Failed to start queue match for mode: " + mode);
                 
                 // Return players to queue

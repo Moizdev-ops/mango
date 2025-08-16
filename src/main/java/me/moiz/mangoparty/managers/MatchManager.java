@@ -230,7 +230,7 @@ public class MatchManager {
     public Match startMatch(Party party, Arena arena, Kit kit, String matchType) {
         if (party == null || arena == null || kit == null || matchType == null) {
             plugin.getLogger().warning("Cannot start match: Missing required parameters");
-            return null;
+            return false;
         }
         
         if (party.isInMatch()) {
@@ -321,7 +321,7 @@ public class MatchManager {
         // Start countdown
         startCountdown(match);
         
-        return match;
+        return true;
     }
     
     /**
@@ -539,12 +539,13 @@ public class MatchManager {
      * @param kit The kit to use for the match
      * @param mode The queue mode (e.g., "1v1", "2v2")
      * @param players The players participating in the match
-     * @return The created match, or null if the match could not be started
+     * @param match The match object created by QueueManager
+     * @return true if the match was successfully started, false otherwise
      */
-    public Match startQueueMatch(Party matchParty, Arena arena, Kit kit, String mode, List<Player> players) {
-        if (matchParty == null || arena == null || kit == null || mode == null || players == null || players.isEmpty()) {
+    public boolean startQueueMatch(Party matchParty, Arena arena, Kit kit, String mode, List<Player> players, Match match) {
+        if (matchParty == null || arena == null || kit == null || mode == null || players == null || players.isEmpty() || match == null) {
             plugin.getLogger().warning("Cannot start queue match: Missing required parameters");
-            return null;
+            return false;
         }
         
         // Check if kit is allowed in this arena
@@ -572,26 +573,25 @@ public class MatchManager {
             // If we found or created an available arena, use it
             if (availableArena != null) {
                 arena = availableArena;
+                match.setArena(arena);
             }
         }
         
         // Reserve the arena
         plugin.getArenaManager().reserveArena(arena.getName());
         
-        // Create match object
-        String matchId = "queue_" + mode + "_" + System.currentTimeMillis() + "_" + UUID.randomUUID().toString().substring(0, 8);
-        Match match = new Match(matchId, matchParty, arena, kit, "queue_" + mode);
+        // Use match object from QueueManager
         
         // Assign teams based on mode
-        if (!assignQueueTeams(match, players, mode)) {
-            plugin.getLogger().warning("Failed to assign teams for queue match: " + matchId);
-            return null;
+        if (!assignQueueTeams(match, mode, players)) {
+            plugin.getLogger().warning("Failed to assign teams for queue match: " + match.getId());
+            return false;
         }
         
         // Store match
-        activeMatches.put(matchId, match);
+        activeMatches.put(match.getId(), match);
         for (Player player : players) {
-            playerMatches.put(player.getUniqueId(), matchId);
+            playerMatches.put(player.getUniqueId(), match.getId());
         }
         
         // Set gamerule for immediate respawn
