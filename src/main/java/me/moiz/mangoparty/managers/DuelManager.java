@@ -607,6 +607,20 @@ public class DuelManager {
             // Duel is over - skip delay on final round
             endDuel(duel, winnerUUID);
         } else {
+            // Make players invulnerable during the delay
+            Player player1 = duel.getChallenger();
+            Player player2 = duel.getTarget();
+            
+            if (player1 != null && player1.isOnline()) {
+                player1.setInvulnerable(true);
+                player1.setGameMode(GameMode.ADVENTURE);
+            }
+            
+            if (player2 != null && player2.isOnline()) {
+                player2.setInvulnerable(true);
+                player2.setGameMode(GameMode.ADVENTURE);
+            }
+            
             // Wait 2 seconds before proceeding to next round
             Bukkit.getScheduler().runTaskLater(plugin, () -> {
                 // Prepare for next round

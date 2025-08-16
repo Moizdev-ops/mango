@@ -1,0 +1,17 @@
+title: "§6Allowed Kits - {arena_name}"
+size: 54
+
+# This file configures the GUI for managing which kits are allowed in an arena
+# Each kit will be displayed with its icon and a status indicator
+
+buttons:
+  # This section will be dynamically populated with kit buttons
+  # The actual kit buttons will be created based on available kits
+  
+  back:
+    slot: 49
+    material: "ARROW"
+    name: "§cBack to Arena Editor"
+    lore:
+      - "§7Click to return to the arena editor"
+    customModelData: 0

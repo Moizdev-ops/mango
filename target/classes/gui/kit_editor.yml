@@ -1,0 +1,110 @@
+title: "§6Kit Rules - {kit_name}"
+size: 27
+
+buttons:
+  natural_health_regen:
+    slot: 10
+    material_enabled: "GOLDEN_APPLE"
+    material_disabled: "ROTTEN_FLESH"
+    name_enabled: "§aNatural Health Regen: §2Enabled"
+    name_disabled: "§cNatural Health Regen: §4Disabled"
+    lore_enabled:
+      - "§7Players regenerate health naturally"
+      - "§7Click to disable"
+    lore_disabled:
+      - "§7Players don't regenerate health"
+      - "§7Click to enable"
+    customModelData: 0
+  
+  block_break:
+    slot: 11
+    material_enabled: "DIAMOND_PICKAXE"
+    material_disabled: "WOODEN_PICKAXE"
+    name_enabled: "§aBlock Breaking: §2Enabled"
+    name_disabled: "§cBlock Breaking: §4Disabled"
+    lore_enabled:
+      - "§7Players can break blocks"
+      - "§7Click to disable"
+    lore_disabled:
+      - "§7Players cannot break blocks"
+      - "§7Click to enable"
+    customModelData: 0
+  
+  block_place:
+    slot: 12
+    material_enabled: "GRASS_BLOCK"
+    material_disabled: "BARRIER"
+    name_enabled: "§aBlock Placing: §2Enabled"
+    name_disabled: "§cBlock Placing: §4Disabled"
+    lore_enabled:
+      - "§7Players can place blocks"
+      - "§7Click to disable"
+    lore_disabled:
+      - "§7Players cannot place blocks"
+      - "§7Click to enable"
+    customModelData: 0
+  
+  damage_multiplier:
+    slot: 13
+    material_enabled: "DIAMOND_SWORD"
+    material_disabled: "WOODEN_SWORD"
+    name_enabled: "§a+33% Damage: §2Enabled"
+    name_disabled: "§c+33% Damage: §4Disabled"
+    lore_enabled:
+      - "§7Players deal 33% extra damage"
+      - "§7Click to disable"
+    lore_disabled:
+      - "§7Normal damage dealt"
+      - "§7Click to enable"
+    customModelData: 0
+  
+  instant_tnt:
+    slot: 14
+    material_enabled: "TNT"
+    material_disabled: "REDSTONE"
+    name_enabled: "§aInstant TNT: §2Enabled"
+    name_disabled: "§cInstant TNT: §4Disabled"
+    lore_enabled:
+      - "§7TNT explodes instantly when placed"
+      - "§7Click to disable"
+    lore_disabled:
+       
+      - "§7TNT explodes instantly when placed"
+      - "§7Click to disable"
+    lore_disabled:
+      - "§7TNT has normal fuse time"
+      - "§7Click to enable"
+    customModelData: 0
+
+  edit_icon:
+    slot: 16
+    material: "ITEM_FRAME"
+    name: "§6Edit Kit Icon"
+    lore:
+      - "§7Hold an item in your main hand"
+      - "§7and click to set it as the kit icon"
+      - "§7This icon will appear in ALL GUIs"
+      - "§7universally across the plugin"
+    customModelData: 0
+
+  add_to_gui:
+    slot: 21
+    material: "CHEST"
+    name: "§eManage GUI Placement"
+    lore:
+      - "§a§lLeft Click: §7Add kit to GUIs"
+      - "§c§lRight Click: §7Remove kit from GUIs"
+      - "§7Manage kit placement in:"
+      - "§7• Split, FFA, Queue GUIs"
+    customModelData: 0
+
+  edit_slots:
+    slot: 23
+    material: "COMPASS"
+    name: "§bEdit GUI Slots"
+    lore:
+      - "§7Click to edit slot positions"
+      - "§7for this kit in different GUIs"
+      - "§7Shows current slot positions"
+      - "§7Uses chat input for new slots"
+    customModelData: 0

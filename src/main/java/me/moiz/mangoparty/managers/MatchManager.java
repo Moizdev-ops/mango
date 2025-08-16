@@ -7,6 +7,7 @@ import me.moiz.mangoparty.models.Match;
 import me.moiz.mangoparty.models.Party;
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
+import org.bukkit.Location;
 import org.bukkit.Sound;
 import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitRunnable;
@@ -41,6 +42,42 @@ public class MatchManager {
         
         // Schedule periodic cleanup of stale matches
         scheduleMatchCleanup();
+    }
+    
+    /**
+     * Clear all entities and drops within an arena's boundaries
+     */
+    private void clearArenaEntities(Arena arena) {
+        if (arena == null || arena.getCorner1() == null || arena.getCorner2() == null) {
+            return;
+        }
+        
+        // Get arena boundaries
+        Location corner1 = arena.getCorner1();
+        Location corner2 = arena.getCorner2();
+        double minX = Math.min(corner1.getX(), corner2.getX());
+        double minY = Math.min(corner1.getY(), corner2.getY());
+        double minZ = Math.min(corner1.getZ(), corner2.getZ());
+        double maxX = Math.max(corner1.getX(), corner2.getX());
+        double maxY = Math.max(corner1.getY(), corner2.getY());
+        double maxZ = Math.max(corner1.getZ(), corner2.getZ());
+        
+        // Get all entities in the world
+        corner1.getWorld().getEntities().forEach(entity -> {
+            // Skip players
+            if (entity instanceof Player) {
+                return;
+            }
+            
+            // Check if entity is within arena boundaries
+            Location loc = entity.getLocation();
+            if (loc.getX() >= minX && loc.getX() <= maxX &&
+                loc.getY() >= minY && loc.getY() <= maxY &&
+                loc.getZ() >= minZ && loc.getZ() <= maxZ) {
+                // Remove the entity
+                entity.remove();
+            }
+        });
     }
 
     /**
@@ -271,6 +308,9 @@ public class MatchManager {
                 arena = availableArena;
             }
         }
+        
+        // Clear arena entities before reserving
+        clearArenaEntities(arena);
         
         // Reserve the arena
         plugin.getArenaManager().reserveArena(arena.getName());
@@ -846,6 +886,9 @@ public class MatchManager {
         // Set party as not in match
         match.getParty().setInMatch(false);
         match.setState(Match.MatchState.FINISHED);
+        
+        // Clear arena entities at the end of the match
+        clearArenaEntities(match.getArena());
         
         // Cancel scoreboard update task
         plugin.getScoreboardManager().cancelTask(match.getId());
