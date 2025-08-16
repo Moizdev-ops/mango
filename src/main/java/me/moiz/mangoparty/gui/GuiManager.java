@@ -196,7 +196,7 @@ public class GuiManager implements Listener {
                 ConfigurationSection kitSection = kitsSection.getConfigurationSection(kitKey);
                 if (kitSection != null) {
                     String kitName = kitSection.getString("kit");
-                    Kit kit = availableKits.get(kitName);
+                    Kit kit = plugin.getKitManager().getKit(kitName);
                     
                     if (kit != null) {
                         int slot = kitSection.getInt("slot");
@@ -278,7 +278,7 @@ public class GuiManager implements Listener {
                 ConfigurationSection kitSection = kitsSection.getConfigurationSection(kitKey);
                 if (kitSection != null) {
                     String kitName = kitKey; // Use the key as kit name
-                    Kit kit = availableKits.get(kitName);
+                    Kit kit = plugin.getKitManager().getKit(kitName);
                     
                     if (kit != null) {
                         int slot = kitSection.getInt("slot");
@@ -328,7 +328,7 @@ public class GuiManager implements Listener {
                 ConfigurationSection kitSection = kitsSection.getConfigurationSection(kitKey);
                 if (kitSection != null) {
                     String kitName = kitSection.getString("kit");
-                    Kit kit = availableKits.get(kitName);
+                    Kit kit = plugin.getKitManager().getKit(kitName);
                     
                     if (kit != null) {
                         int slot = kitSection.getInt("slot");
