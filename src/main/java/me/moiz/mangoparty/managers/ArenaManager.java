@@ -149,7 +149,8 @@ public class ArenaManager {
             return arena;
         } catch (Exception e) {
             plugin.getLogger().warning("Failed to load arena: " + name + " - " + e.getMessage());
-            e.printStackTrace(); // Print stack trace for detailed debugging
+            e.printStackTrace();
+            return false; // Print stack trace for detailed debugging
             return null;
         }
     }
@@ -247,12 +248,12 @@ public class ArenaManager {
         return new Location(original.getWorld(), original.getX() + xOffset, original.getY(), original.getZ() + zOffset, original.getYaw(), original.getPitch());
     }
 
-    private void pasteArenaSchematic(Arena baseArena, Arena instanceArena) throws IOException {
+    private boolean pasteArenaSchematic(Arena baseArena, Arena instanceArena) throws IOException {
         plugin.getLogger().info("Pasting schematic for instance " + instanceArena.getName() + " from base " + baseArena.getName());
         File schematicFile = new File(plugin.getDataFolder(), "schematics/" + baseArena.getName() + ".schem");
         if (!schematicFile.exists()) {
             plugin.getLogger().warning("Schematic file not found for base arena: " + baseArena.getName() + ". Path: " + schematicFile.getAbsolutePath());
-            return;
+            return false;
         }
 
         Clipboard clipboard = null;
@@ -263,7 +264,7 @@ public class ArenaManager {
 
         if (clipboard == null) {
             plugin.getLogger().warning("Failed to read schematic from file: " + schematicFile.getName());
-            return;
+            return false;
         }
 
         // Safely get the world
@@ -282,9 +283,11 @@ public class ArenaManager {
                     .build();
             Operations.complete(operation);
             plugin.getLogger().info("Schematic pasted successfully for " + instanceArena.getName() + " at " + pasteLocation.toString());
+            return true;
         } catch (Exception e) {
             plugin.getLogger().severe("Error pasting schematic for arena instance " + instanceArena.getName() + ": " + e.getMessage());
             e.printStackTrace();
+            return false;
         }
     }
     
