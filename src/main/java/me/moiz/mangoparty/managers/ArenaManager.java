@@ -150,7 +150,7 @@ public class ArenaManager {
         } catch (Exception e) {
             plugin.getLogger().warning("Failed to load arena: " + name + " - " + e.getMessage());
             e.printStackTrace();
-            return false; // Print stack trace for detailed debugging
+            // Print stack trace for detailed debugging
             return null;
         }
     }
