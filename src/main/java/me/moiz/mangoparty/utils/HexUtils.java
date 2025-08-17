@@ -150,4 +150,87 @@ public class HexUtils {
     public static boolean supportsHex() {
         return SUPPORTS_HEX;
     }
+    
+    /**
+     * Creates a gradient between two colors and applies it to a string.
+     * Each character in the text will have a color that is part of the gradient.
+     * 
+     * @param text The text to apply the gradient to
+     * @param startHex The starting hex color (format: "#RRGGBB")
+     * @param endHex The ending hex color (format: "#RRGGBB")
+     * @return The text with gradient colors applied
+     */
+    public static String gradient(String text, String startHex, String endHex) {
+        if (text == null || text.isEmpty()) return text;
+        if (!SUPPORTS_HEX) {
+            // Fallback to legacy colors if hex is not supported
+            return colorize(text);
+        }
+        
+        // Remove any existing color codes
+        String stripped = stripColor(text);
+        
+        // Parse hex colors
+        java.awt.Color startColor = java.awt.Color.decode(startHex);
+        java.awt.Color endColor = java.awt.Color.decode(endHex);
+        
+        StringBuilder result = new StringBuilder();
+        int length = stripped.length();
+        
+        for (int i = 0; i < length; i++) {
+            // Calculate the color for this position in the gradient
+            float ratio = (float) i / (length - 1);
+            int red = (int) (startColor.getRed() * (1 - ratio) + endColor.getRed() * ratio);
+            int green = (int) (startColor.getGreen() * (1 - ratio) + endColor.getGreen() * ratio);
+            int blue = (int) (startColor.getBlue() * (1 - ratio) + endColor.getBlue() * ratio);
+            
+            // Format the color and append the character
+            String hex = String.format("#%02x%02x%02x", red, green, blue);
+            result.append(ChatColor.of(hex)).append(stripped.charAt(i));
+        }
+        
+        return result.toString();
+    }
+    
+    /**
+     * Creates a rainbow effect on the given text.
+     * Each character will have a color from the rainbow spectrum.
+     * 
+     * @param text The text to apply the rainbow effect to
+     * @return The text with rainbow colors applied
+     */
+    public static String rainbow(String text) {
+        if (text == null || text.isEmpty()) return text;
+        if (!SUPPORTS_HEX) {
+            // Fallback to legacy colors if hex is not supported
+            return colorize("&c" + text);
+        }
+        
+        // Remove any existing color codes
+        String stripped = stripColor(text);
+        
+        StringBuilder result = new StringBuilder();
+        int length = stripped.length();
+        
+        // Rainbow colors
+        String[] colors = {
+            "#FF0000", // Red
+            "#FF7F00", // Orange
+            "#FFFF00", // Yellow
+            "#00FF00", // Green
+            "#0000FF", // Blue
+            "#4B0082", // Indigo
+            "#9400D3"  // Violet
+        };
+        
+        for (int i = 0; i < length; i++) {
+            // Calculate which color to use
+            int colorIndex = i % colors.length;
+            
+            // Apply the color and append the character
+            result.append(ChatColor.of(colors[colorIndex])).append(stripped.charAt(i));
+        }
+        
+        return result.toString();
+    }
 }

@@ -266,7 +266,14 @@ public class ArenaManager {
             return;
         }
 
-        try (EditSession editSession = WorldEdit.getInstance().newEditSession(BukkitAdapter.adapt(Bukkit.getWorld(instanceArena.getWorld())))) {
+        // Safely get the world
+        org.bukkit.World bukkitWorld = Bukkit.getWorld(instanceArena.getWorld());
+        if (bukkitWorld == null) {
+            plugin.getLogger().warning("Cannot paste schematic: world '" + instanceArena.getWorld() + "' not found for instance " + instanceArena.getName());
+            return false;
+        }
+        
+        try (EditSession editSession = WorldEdit.getInstance().newEditSession(BukkitAdapter.adapt(bukkitWorld))) {
             BlockVector3 pasteLocation = BlockVector3.at(instanceArena.getCorner1().getX(), instanceArena.getCorner1().getY(), instanceArena.getCorner1().getZ());
             Operation operation = new ClipboardHolder(clipboard)
                     .createPaste(editSession)
@@ -426,6 +433,12 @@ public class ArenaManager {
                 }
             }
             
+            // Safely adapt the world with null check
+            if (instance.getCorner1() == null || instance.getCorner1().getWorld() == null) {
+                plugin.getLogger().warning("Cannot paste schematic: corner1 or its world is null for instance " + instance.getName());
+                return false;
+            }
+            
             com.sk89q.worldedit.world.World world = BukkitAdapter.adapt(instance.getCorner1().getWorld());
             plugin.getLogger().info("Adapted Bukkit world to WorldEdit world: " + world.getName());
             
@@ -583,6 +596,18 @@ public class ArenaManager {
             
             File schematicFile = new File(schematicsDir, arena.getName() + ".schem");
             
+            // Safely adapt the world with null check
+            if (arena.getCorner1().getWorld() == null) {
+                plugin.getLogger().warning("Cannot paste schematic: world is null for arena " + arena.getName());
+                return false;
+            }
+            
+            // Safely adapt the world with null check
+            if (arena.getCorner1().getWorld() == null) {
+                plugin.getLogger().warning("Cannot paste schematic: world is null for arena " + arena.getName());
+                return false;
+            }
+            
             com.sk89q.worldedit.world.World world = BukkitAdapter.adapt(arena.getCorner1().getWorld());
             BlockVector3 min = BlockVector3.at(
                 Math.min(arena.getCorner1().getBlockX(), arena.getCorner2().getBlockX()),
@@ -644,6 +669,18 @@ public class ArenaManager {
             return false;
         }
         
+        // Additional null checks for corner locations
+        if (arena.getCorner1() == null || arena.getCorner2() == null) {
+            plugin.getLogger().warning("Cannot paste schematic: arena corners are null for arena " + arena.getName());
+            return false;
+        }
+        
+        // Check if world is null
+        if (arena.getCorner1().getWorld() == null || arena.getCorner2().getWorld() == null) {
+            plugin.getLogger().warning("Cannot paste schematic: arena corner worlds are null for arena " + arena.getName());
+            return false;
+        }
+        
         try {
             String schematicName;
             
@@ -672,6 +709,12 @@ public class ArenaManager {
                 
                 // Cache for future use
                 schematicCache.put(schematicName, clipboard);
+            }
+            
+            // Safely adapt the world with null check
+            if (arena.getCorner1() == null || arena.getCorner1().getWorld() == null) {
+                plugin.getLogger().warning("Cannot paste schematic: corner1 or its world is null for arena " + arena.getName());
+                return false;
             }
             
             com.sk89q.worldedit.world.World world = BukkitAdapter.adapt(arena.getCorner1().getWorld());

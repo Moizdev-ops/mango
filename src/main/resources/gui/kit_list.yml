@@ -1,14 +1,20 @@
-title: "§6Kit Manager"
+title: "&#FFD700&l⚔ &#FFA500&lKit Manager &#FFD700&l⚔"
 size: 54
+fill-empty-slots: true
+empty-slot-item: BLACK_STAINED_GLASS_PANE
+empty-slot-name: " "
 
 # Default settings for kits not specifically configured
 default:
   material: "IRON_SWORD"
-  name: "§e{kit_name}"
+  name: "&#FFA500&l{kit_name}"
   lore:
-    - "§7Click to edit kit rules"
-    - "§7Kit: {kit_display_name}"
-  customModelData: 0
+    - "&#AAAAAA&o⚙ Click to edit kit rules and settings"
+    - "&#AAAAAA&o⚔ Kit: &#00FFFF&l{kit_display_name}"
+    - ""
+    - "&#FFAA00&l➥ Click to configure"
+  customModelData: 2001
+  glowing: true
 
 # Specific kit configurations (optional)
 kits:
@@ -16,8 +22,15 @@ kits:
   # warrior:
   #   slot: 10
   #   material: "DIAMOND_SWORD"
-  #   name: "§cWarrior Kit"
+  #   name: "&#FF0000&l⚔ Warrior Kit ⚔"
   #   lore:
-  #     - "§7A powerful melee kit"
-  #     - "§7Click to edit rules"
-  #   customModelData: 1001
+  #     - "&#AAAAAA&o⚔ A powerful melee kit"
+  #     - "&#AAAAAA&o⚔ Specializes in close combat"
+  #     - ""
+  #     - "&#55FFFF&lℹ Features:"
+  #     - "&#AAAAAA&o🗡 Enhanced sword damage"
+  #     - "&#AAAAAA&o🛡 Reduced knockback"
+  #     - ""
+  #     - "&#FFAA00&l➥ Click to configure"
+  #   customModelData: 2002
+  #   glowing: true

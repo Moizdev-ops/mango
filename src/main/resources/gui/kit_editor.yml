@@ -1,4 +1,4 @@
-title: "§6Kit Rules - {kit_name}"
+title: "&#FFD700&l⚔ &#FFA500&lKit Rules &#FFD700&l- &#00FFFF&l{kit_name} &#FFD700&l⚔"
 size: 27
 
 buttons:
@@ -6,101 +6,136 @@ buttons:
     slot: 10
     material_enabled: "GOLDEN_APPLE"
     material_disabled: "ROTTEN_FLESH"
-    name_enabled: "§aNatural Health Regen: §2Enabled"
-    name_disabled: "§cNatural Health Regen: §4Disabled"
+    name_enabled: "&#00FF00&lNatural Health Regen: &#00AA00&lEnabled ✓"
+    name_disabled: "&#FF0000&lNatural Health Regen: &#AA0000&lDisabled ✗"
     lore_enabled:
-      - "§7Players regenerate health naturally"
-      - "§7Click to disable"
+      - "&#AAAAAA&o⚕ Players regenerate health naturally"
+      - "&#AAAAAA&o⚕ Healing occurs over time"
+      - ""
+      - "&#FFAA00&l➥ Click to disable"
     lore_disabled:
-      - "§7Players don't regenerate health"
-      - "§7Click to enable"
-    customModelData: 0
+      - "&#AAAAAA&o⚕ Players don't regenerate health"
+      - "&#AAAAAA&o⚕ No natural healing occurs"
+      - ""
+      - "&#FFAA00&l➥ Click to enable"
+    customModelData: 1001
   
   block_break:
     slot: 11
     material_enabled: "DIAMOND_PICKAXE"
     material_disabled: "WOODEN_PICKAXE"
-    name_enabled: "§aBlock Breaking: §2Enabled"
-    name_disabled: "§cBlock Breaking: §4Disabled"
+    name_enabled: "&#00FF00&lBlock Breaking: &#00AA00&lEnabled ✓"
+    name_disabled: "&#FF0000&lBlock Breaking: &#AA0000&lDisabled ✗"
     lore_enabled:
-      - "§7Players can break blocks"
-      - "§7Click to disable"
+      - "&#AAAAAA&o⛏ Players can break blocks"
+      - "&#AAAAAA&o⛏ Terrain can be modified"
+      - ""
+      - "&#FFAA00&l➥ Click to disable"
     lore_disabled:
-      - "§7Players cannot break blocks"
-      - "§7Click to enable"
-    customModelData: 0
+      - "&#AAAAAA&o⛏ Players cannot break blocks"
+      - "&#AAAAAA&o⛏ Terrain is protected"
+      - ""
+      - "&#FFAA00&l➥ Click to enable"
+    customModelData: 1002
   
   block_place:
     slot: 12
     material_enabled: "GRASS_BLOCK"
     material_disabled: "BARRIER"
-    name_enabled: "§aBlock Placing: §2Enabled"
-    name_disabled: "§cBlock Placing: §4Disabled"
+    name_enabled: "&#00FF00&lBlock Placing: &#00AA00&lEnabled ✓"
+    name_disabled: "&#FF0000&lBlock Placing: &#AA0000&lDisabled ✗"
     lore_enabled:
-      - "§7Players can place blocks"
-      - "§7Click to disable"
+      - "&#AAAAAA&o🧱 Players can place blocks"
+      - "&#AAAAAA&o🧱 Build structures freely"
+      - ""
+      - "&#FFAA00&l➥ Click to disable"
     lore_disabled:
-      - "§7Players cannot place blocks"
-      - "§7Click to enable"
-    customModelData: 0
+      - "&#AAAAAA&o🧱 Players cannot place blocks"
+      - "&#AAAAAA&o🧱 Building is restricted"
+      - ""
+      - "&#FFAA00&l➥ Click to enable"
+    customModelData: 1003
   
   damage_multiplier:
     slot: 13
     material_enabled: "DIAMOND_SWORD"
     material_disabled: "WOODEN_SWORD"
-    name_enabled: "§a+33% Damage: §2Enabled"
-    name_disabled: "§c+33% Damage: §4Disabled"
+    glowing_enabled: true
+    name_enabled: "&#00FF00&l+33% Damage: &#00AA00&lEnabled ✓"
+    name_disabled: "&#FF0000&l+33% Damage: &#AA0000&lDisabled ✗"
     lore_enabled:
-      - "§7Players deal 33% extra damage"
-      - "§7Click to disable"
+      - "&#AAAAAA&o⚔ Players deal 33% extra damage"
+      - "&#AAAAAA&o⚔ Increased combat power"
+      - ""
+      - "&#FFAA00&l➥ Click to disable"
     lore_disabled:
-      - "§7Normal damage dealt"
-      - "§7Click to enable"
-    customModelData: 0
+      - "&#AAAAAA&o⚔ Normal damage dealt"
+      - "&#AAAAAA&o⚔ Standard combat power"
+      - ""
+      - "&#FFAA00&l➥ Click to enable"
+    customModelData: 1004
   
   instant_tnt:
     slot: 14
     material_enabled: "TNT"
     material_disabled: "REDSTONE"
-    name_enabled: "§aInstant TNT: §2Enabled"
-    name_disabled: "§cInstant TNT: §4Disabled"
+    glowing_enabled: true
+    name_enabled: "&#00FF00&lInstant TNT: &#00AA00&lEnabled ✓"
+    name_disabled: "&#FF0000&lInstant TNT: &#AA0000&lDisabled ✗"
     lore_enabled:
-      - "§7TNT explodes instantly when placed"
-      - "§7Click to disable"
+      - "&#AAAAAA&o💥 TNT explodes instantly when placed"
+      - "&#AAAAAA&o💥 No fuse delay"
+      - ""
+      - "&#FFAA00&l➥ Click to disable"
     lore_disabled:
-       
-      - "§7TNT explodes instantly when placed"
-      - "§7Click to disable"
-    lore_disabled:
-      - "§7TNT has normal fuse time"
-      - "§7Click to enable"
-    customModelData: 0
+      - "&#AAAAAA&o💥 TNT has normal fuse time"
+      - "&#AAAAAA&o💥 Standard explosion delay"
+      - ""
+      - "&#FFAA00&l➥ Click to enable"
+    customModelData: 1005
 
   edit_icon:
     slot: 16
     material: "ITEM_FRAME"
-    name: "§6Edit Kit Icon"
+    name: "&#FFD700&l✎ &#FFA500&lEdit Kit Icon &#FFD700&l✎"
     lore:
-      - "§7Hold an item in your main hand"
-      - "§7and click to set it as the kit icon"
-      - "§7This icon will appear in ALL GUIs"
-      - "§7universally across the plugin"
-    customModelData: 0
+      - "&#AAAAAA&o🖼 Hold an item in your main hand"
+      - "&#AAAAAA&o🖼 Click to set it as the kit icon"
+      - ""
+      - "&#55FFFF&lℹ This icon will appear in ALL GUIs"
+      - "&#55FFFF&lℹ universally across the plugin"
+      - ""
+      - "&#FFAA00&l➥ Click while holding an item"
+    customModelData: 1006
+    glowing: true
 
   add_to_gui:
     slot: 21
     material: "CHEST"
-    name: "§eManage GUI Placement"
+    name: "&#FFD700&l⚙ &#FFA500&lManage GUI Placement &#FFD700&l⚙"
     lore:
-      - "§a§lLeft Click: §7Add kit to GUIs"
-      - "§c§lRight Click: §7Remove kit from GUIs"
-      - "§7Manage kit placement in:"
-      - "§7• Split, FFA, Queue GUIs"
-    customModelData: 0
+      - "&#00FF00&l➥ Left Click: &#AAAAAA&oAdd kit to GUIs"
+      - "&#FF0000&l➥ Right Click: &#AAAAAA&oRemove kit from GUIs"
+      - ""
+      - "&#55FFFF&lℹ Manage kit placement in:"
+      - "&#AAAAAA&o📋 Split, FFA, Queue GUIs"
+    customModelData: 1007
+    glowing: true
 
   edit_slots:
     slot: 23
     material: "COMPASS"
+    name: "&#FFD700&l⚙ &#FFA500&lEdit GUI Slots &#FFD700&l⚙"
+    lore:
+      - "&#AAAAAA&o📊 Configure where this kit appears"
+      - "&#AAAAAA&o📊 in different GUI menus"
+      - ""
+      - "&#55FFFF&lℹ Click to edit slot positions"
+      - "&#55FFFF&lℹ for all kit selection menus"
+      - ""
+      - "&#FFAA00&l➥ Click to configure"
+    customModelData: 1008
+    glowing: true
     name: "§bEdit GUI Slots"
     lore:
       - "§7Click to edit slot positions"

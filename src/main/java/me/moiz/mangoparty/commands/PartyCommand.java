@@ -121,23 +121,23 @@ public class PartyCommand implements CommandExecutor {
     }
     
     private void sendHelpMessage(Player player) {
-        player.sendMessage("§6=== Party Commands ===");
-        player.sendMessage("§e/party create §7- Create a new party");
-        player.sendMessage("§e/party invite <player> §7- Invite a player to your party");
-        player.sendMessage("§e/party join <leader> §7- Join a party");
-        player.sendMessage("§e/party public §7- Make your party public (anyone can join)");
-        player.sendMessage("§e/party private §7- Make your party private (invite only)");
-        player.sendMessage("§e/party transfer <player> §7- Transfer party leadership");
-        player.sendMessage("§e/party leave §7- Leave your current party");
-        player.sendMessage("§e/party disband §7- Disband your party (leader only)");
-        player.sendMessage("§e/party match §7- Start a match (leader only)");
-        player.sendMessage("§e/party fight §7- Start a match (leader only)");
-        player.sendMessage("§e/party challenge <leader> §7- Challenge another party");
-        player.sendMessage("§e/party acceptduel <challenger> §7- Accept a party duel");
-        player.sendMessage("§e/party declineduel <challenger> §7- Decline a party duel");
-        player.sendMessage("§e/party acceptchallenge <challenger> §7- Accept a party duel challenge");
-        player.sendMessage("§e/party declinechallenge <challenger> §7- Decline a party duel challenge");
-        player.sendMessage("§e/party info §7- View party information");
+        player.sendMessage("§e§l=== §6§lParty Commands §e§l===");
+        player.sendMessage("§e/party create §8- §7Create a new party");
+        player.sendMessage("§e/party invite <player> §8- §7Invite a player to your party");
+        player.sendMessage("§e/party join <leader> §8- §7Join a party");
+        player.sendMessage("§e/party public §8- §7Make your party public (anyone can join)");
+        player.sendMessage("§e/party private §8- §7Make your party private (invite only)");
+        player.sendMessage("§e/party transfer <player> §8- §7Transfer party leadership");
+        player.sendMessage("§e/party leave §8- §7Leave your current party");
+        player.sendMessage("§e/party disband §8- §7Disband your party (leader only)");
+        player.sendMessage("§e/party match §8- §7Start a match (leader only)");
+        player.sendMessage("§e/party fight §8- §7Start a match (leader only)");
+        player.sendMessage("§e/party challenge <leader> §8- §7Challenge another party");
+        player.sendMessage("§e/party acceptduel <challenger> §8- §7Accept a party duel");
+        player.sendMessage("§e/party declineduel <challenger> §8- §7Decline a party duel");
+        player.sendMessage("§e/party acceptchallenge <challenger> §8- §7Accept a party duel challenge");
+        player.sendMessage("§e/party declinechallenge <challenger> §8- §7Decline a party duel challenge");
+        player.sendMessage("§e/party info §8- §7View party information");
     }
     
     private void handleCreateCommand(Player player) {

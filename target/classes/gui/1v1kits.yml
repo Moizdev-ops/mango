@@ -1,5 +1,8 @@
-title: "§61V1 Kit Selection"
+title: "&#FFD700&l⚔ &#FFA500&l1V1 &#FFD700&lKit Selection &#FFD700&l⚔"
 size: 27
+fill-empty-slots: true
+empty-slot-item: BLACK_STAINED_GLASS_PANE
+empty-slot-name: " "
 
 kits:
   # Example configuration - populate with actual kits using /mango addkitgui
@@ -9,4 +12,4 @@ kits:
   #   name: "&bSword Kit"
   #   lore:
   #     - "&7Click to queue with this kit."
-  #     - "&eQueued: {queued}"
+  #     - "&eQueued: &6{queued}/2"

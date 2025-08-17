@@ -334,7 +334,11 @@ public class MatchManager {
         }
         
         // Set gamerule for immediate respawn and keep it true
-        arena.getCenter().getWorld().setGameRuleValue("doImmediateRespawn", "true");
+        if (arena.getCenter() != null && arena.getCenter().getWorld() != null) {
+            arena.getCenter().getWorld().setGameRuleValue("doImmediateRespawn", "true");
+        } else {
+            plugin.getLogger().warning("Cannot set gamerule: arena center or world is null for arena " + arena.getName());
+        }
         
         // Regenerate arena
         plugin.getArenaManager().pasteSchematic(arena);
@@ -540,7 +544,11 @@ public class MatchManager {
         }
         
         // Set gamerule for immediate respawn
-        arena.getCenter().getWorld().setGameRuleValue("doImmediateRespawn", "true");
+        if (arena.getCenter() != null && arena.getCenter().getWorld() != null) {
+            arena.getCenter().getWorld().setGameRuleValue("doImmediateRespawn", "true");
+        } else {
+            plugin.getLogger().warning("Cannot set gamerule: arena center or world is null for arena " + arena.getName());
+        }
         
         // Regenerate arena
         plugin.getArenaManager().pasteSchematic(arena);
@@ -635,7 +643,11 @@ public class MatchManager {
         }
         
         // Set gamerule for immediate respawn
-        arena.getCenter().getWorld().setGameRuleValue("doImmediateRespawn", "true");
+        if (arena.getCenter() != null && arena.getCenter().getWorld() != null) {
+            arena.getCenter().getWorld().setGameRuleValue("doImmediateRespawn", "true");
+        } else {
+            plugin.getLogger().warning("Cannot set gamerule: arena center or world is null for arena " + arena.getName());
+        }
         
         // Regenerate arena
         plugin.getArenaManager().pasteSchematic(arena);
@@ -779,7 +791,38 @@ public class MatchManager {
                     for (Player player : players) {
                         if (player.isOnline()) {
                             player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_PLING, 1f, 1f);
-                            player.sendTitle("§e" + countdown, "§6Organize your inventory", 0, 20, 10);
+                            
+                            // Colorful emoji countdown numbers
+                            String countdownNumber;
+                            String countdownColor;
+                            
+                            switch (countdown) {
+                                case 5:
+                                    countdownNumber = "❺";
+                                    countdownColor = "§c"; // Red
+                                    break;
+                                case 4:
+                                    countdownNumber = "❹";
+                                    countdownColor = "§6"; // Gold
+                                    break;
+                                case 3:
+                                    countdownNumber = "❸";
+                                    countdownColor = "§e"; // Yellow
+                                    break;
+                                case 2:
+                                    countdownNumber = "❷";
+                                    countdownColor = "§a"; // Green
+                                    break;
+                                case 1:
+                                    countdownNumber = "❶";
+                                    countdownColor = "§b"; // Aqua
+                                    break;
+                                default:
+                                    countdownNumber = String.valueOf(countdown);
+                                    countdownColor = "§f"; // White
+                            }
+                            
+                            player.sendTitle(countdownColor + countdownNumber, "§6Organize your inventory", 0, 20, 10);
                         }
                     }
                     countdown--;
@@ -905,6 +948,22 @@ public class MatchManager {
     
     public boolean isInMatch(Player player) {
         return playerMatches.containsKey(player.getUniqueId());
+    }
+    
+    /**
+     * Checks if two players are in the same match.
+     * 
+     * @param player1 The first player
+     * @param player2 The second player
+     * @return true if both players are in the same match, false otherwise
+     */
+    public boolean isInSameMatch(Player player1, Player player2) {
+        if (player1 == null || player2 == null) return false;
+        
+        String match1Id = playerMatches.get(player1.getUniqueId());
+        String match2Id = playerMatches.get(player2.getUniqueId());
+        
+        return match1Id != null && match1Id.equals(match2Id);
     }
     
     /**

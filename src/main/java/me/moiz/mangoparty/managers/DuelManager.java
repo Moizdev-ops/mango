@@ -399,7 +399,11 @@ public class DuelManager {
         Arena arena = duel.getArena();
         
         // Set gamerule for immediate respawn
-        arena.getCenter().getWorld().setGameRuleValue("doImmediateRespawn", "true");
+        if (arena.getCenter() != null && arena.getCenter().getWorld() != null) {
+            arena.getCenter().getWorld().setGameRuleValue("doImmediateRespawn", "true");
+        } else {
+            plugin.getLogger().warning("Cannot set gamerule: arena center or world is null for arena " + arena.getName());
+        }
         
         // Regenerate arena
         plugin.getArenaManager().pasteSchematic(arena);
@@ -452,13 +456,52 @@ public class DuelManager {
             @Override
             public void run() {
                 if (countdown > 0) {
-                    // Display countdown
+                    // Display countdown with colorful emoji numbers
+                    String countdownNumber;
+                    String countdownColor;
+                    
+                    // Determine emoji and color based on countdown value
+                    if (countdown == 10) {
+                        countdownNumber = "❿";
+                        countdownColor = "§4"; // Dark Red
+                    } else if (countdown == 9) {
+                        countdownNumber = "❾";
+                        countdownColor = "§c"; // Red
+                    } else if (countdown == 8) {
+                        countdownNumber = "❽";
+                        countdownColor = "§6"; // Gold
+                    } else if (countdown == 7) {
+                        countdownNumber = "❼";
+                        countdownColor = "§e"; // Yellow
+                    } else if (countdown == 6) {
+                        countdownNumber = "❻";
+                        countdownColor = "§2"; // Dark Green
+                    } else if (countdown == 5) {
+                        countdownNumber = "❺";
+                        countdownColor = "§a"; // Green
+                    } else if (countdown == 4) {
+                        countdownNumber = "❹";
+                        countdownColor = "§b"; // Aqua
+                    } else if (countdown == 3) {
+                        countdownNumber = "❸";
+                        countdownColor = "§9"; // Blue
+                    } else if (countdown == 2) {
+                        countdownNumber = "❷";
+                        countdownColor = "§d"; // Light Purple
+                    } else if (countdown == 1) {
+                        countdownNumber = "❶";
+                        countdownColor = "§5"; // Dark Purple
+                    } else {
+                        countdownNumber = String.valueOf(countdown);
+                        countdownColor = "§f"; // White
+                    }
+                    
                     if (player1.isOnline()) {
-                        player1.sendTitle("§c" + countdown, "§eOrganize your inventory", 0, 20, 0);
+                        player1.sendTitle(countdownColor + countdownNumber, "§eOrganize your inventory", 0, 20, 0);
                         player1.playSound(player1.getLocation(), Sound.BLOCK_NOTE_BLOCK_HARP, 1.0f, 1.0f);
                     }
                     if (player2.isOnline()) {
-                        player2.sendTitle("§c" + countdown, "§eOrganize your inventory", 0, 20, 0);
+                        player2.sendTitle(countdownColor + countdownNumber, "§eOrganize your inventory", 0, 20, 0);
                         player2.playSound(player2.getLocation(), Sound.BLOCK_NOTE_BLOCK_HARP, 1.0f, 1.0f);
                     }
                     countdown--;

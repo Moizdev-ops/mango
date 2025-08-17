@@ -8,6 +8,7 @@ import me.moiz.mangoparty.gui.AllowedKitsGui;
 import me.moiz.mangoparty.gui.KitEditorGui;
 import me.moiz.mangoparty.listeners.*;
 import me.moiz.mangoparty.managers.*;
+import me.moiz.mangoparty.commands.VisualTestCommand;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -210,6 +211,9 @@ public final class MangoParty extends JavaPlugin {
         // Duel callback command (internal)
         MangoDuelCallbackCommand callbackCommand = new MangoDuelCallbackCommand(this);
         registerCommand("mangoduelcallback", callbackCommand, callbackCommand);
+        
+        // Visual test command
+        registerCommand("visualtest", new VisualTestCommand(this), null);
         
         getLogger().info("All commands registered successfully.");
     }

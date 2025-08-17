@@ -50,6 +50,11 @@ commands:
   mangoduelcallback:
     description: Internal command for duel callbacks
     permission-message: 
+  
+  visualtest:
+    description: Test visual enhancements
+    usage: /visualtest
+    permission: mangoparty.admin
 
 permissions:
   mangoparty.admin:
